@@ -1,0 +1,2 @@
+date,code,score,pool_rank,in_pool,in_hold,above_ma200,space_ok,atr_ok,my_ma50_gap,my_struct_gap,my_dd_from_high_21,my_ma200_gap,my_atr_pct
+2017-12-29,US.AAPL,1.0,1.0,True,True,True,True,True,-0.0030056703392824513,-0.0035070613941744345,-0.04075501643247281,0.09140951173009704,0.01299330581525568
