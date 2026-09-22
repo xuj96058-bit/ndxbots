@@ -1,0 +1,22 @@
+# local env
+.venv/
+venv/
+.env
+.idea/
+
+# python junk
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# downloaded / computed data (rebuild locally)
+data/
+panel/
+factors/*.parquet
+backtest/*.csv
+backtest/*.txt
+mining/
+*.parquet
+strategy/*.parquet
+strategy/observation_pool.csv
