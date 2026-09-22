@@ -53,78 +53,46 @@ class Settings:
     """
 
     # ---------- futu：OpenD 连接 ----------
-    # 本机 OpenD 默认 127.0.0.1:11111。远程或改过端口时用环境变量 FUTU_HOST / FUTU_PORT。
     futu_host: str
     futu_port: int
 
     # ---------- data：本地行情 ----------
-    # 相对路径会拼到 PROJECT_ROOT 下面，例如 data → <项目根>/data
     data_root: Path
-    # 下载日 K 的起点（含当天）。已有 parquet 且非 --full-refresh 时，会从本地最后一天的次日续拉。
     kline_start: str
-    # 下载日 K 的终点（含当天）。None = 拉到 OpenD 当前最新交易日。
-    # 要「2016-01-01 到 2026-09-01」时在 yaml 写 kline_end: "2026-09-01"。
     kline_end: str | None
-    # 每只股票、每一页请求之间的间隔，避免触发富途限频。
     request_sleep_sec: float
-    # request_history_kline 单页最大根数。日 K 十年大约 2500 根，必须分页，这个值保持 1000 即可。
     max_count: int
 
     # ---------- universe：股票池 ----------
-    # True：先在富途美股板块里搜 plate_keywords，找到纳指 100 就用官方成分。
-    # False 或搜索失败：退回 src/ndxbots/data/universe.py 里的兜底名单。
     prefer_futu_plate: bool
     plate_keywords: tuple[str, ...]
-    # 基准代码，必须带市场前缀。面板、交易日历、回测超额收益都用它。
     benchmark: str
-    # 成分之外额外下载的代码，至少要包含 benchmark。
     extra_codes: tuple[str, ...]
 
-    # ---------- strategy：选股层（日线观察池）----------
-    # 参与打分的因子列名，必须能在 factors 表里找到。
+    # ---------- strategy：选股层（日线观察池） ----------
     strategy_factors: tuple[str, ...]
-    # 历史 IC 为负的因子放这里，打分时会乘 -1（越大越好统一成多头方向）。
     strategy_invert: tuple[str, ...]
-    # 观察池大小。执行层只许盯这 top_n 只，不是最终持仓数。
     strategy_top_n: int
-    # True：收盘价必须在日线 MA200 上方才允许进多头池。
     require_above_ma200: bool
-    # 第一版只做多。True 时才生成空头候选（策略层还要自己接）。
     allow_short: bool
-    # 「离高点距离」那一列。默认 my_dd_from_high_21，值是负数（-0.05 = 离 21 日高点跌了 5%）。
     space_col: str
-    # 离高点跌太多视为结构坏了，踢出池子。-0.12 = 最多允许回撤 12%。
     space_min: float
-    # 离高点太近视为追顶。-0.01 = 至少要离开高点 1%。
     space_max: float
-    # 日线 ATR / 收盘价下限。波动太小的票不做。
+    short_space_col: str
+    short_space_min: float
+    short_space_max: float
     min_atr_pct: float
-    # 组合最多同时持有的只数。观察池仍是 top_n，真正下权重的是 max_hold。
     max_hold: int
 
-    # ---------- backtest：回测切片（和下载区间独立）----------
-    # 回测起始日。面板里更早的数据仍可留给均线预热（MA200 大约要 200 根）。
+    # ---------- backtest ----------
     bt_start: str
-    # 回测结束日。None = 用到面板最后一天。
     bt_end: str | None
-    # 单边成本，单位 bp。10 = 买卖各 0.10%。换手时按成交权重差的绝对值扣。
     cost_bps: float
-    # 成交假设。next_close = T 日收盘定池，权重作用在 T+1 的收益上，避免用当根收盘价成交。
     bt_exec: str
-    # 回测初始资金，只影响权益曲线绝对金额，不影响收益率。
     initial_cash: float
 
 
 def load_settings() -> Settings:
-    """
-    从 yaml + 环境变量组装一份不可变 Settings。
-
-    日期相关环境变量：
-        DATA_DIR      覆盖 data.root
-        KLINE_START   覆盖 data.kline_start
-        KLINE_END     覆盖 data.kline_end；设为空字符串表示拉到最新
-        FUTU_HOST / FUTU_PORT / REQUEST_SLEEP 覆盖连接和限频
-    """
     raw = _load_yaml()
     futu = raw.get("futu", {}) or {}
     data = raw.get("data", {}) or {}
@@ -136,7 +104,6 @@ def load_settings() -> Settings:
     if not data_root.is_absolute():
         data_root = PROJECT_ROOT / data_root
 
-    # yaml 优先，环境变量可临时覆盖。未写 kline_end 时保持 None = 不截断。
     kline_end = _optional_str(data.get("kline_end"))
     if "KLINE_END" in os.environ:
         kline_end = _optional_str(os.environ.get("KLINE_END"))
@@ -165,6 +132,9 @@ def load_settings() -> Settings:
         space_col=str(strategy.get("space_col", "my_dd_from_high_21")),
         space_min=float(strategy.get("space_min", -0.12)),
         space_max=float(strategy.get("space_max", -0.01)),
+        short_space_col=str(strategy.get("short_space_col", "my_dist_from_low_21")),
+        short_space_min=float(strategy.get("short_space_min", 0.01)),
+        short_space_max=float(strategy.get("short_space_max", 0.12)),
         min_atr_pct=float(strategy.get("min_atr_pct", 0.01)),
         max_hold=int(strategy.get("max_hold", 4)),
         bt_start=str(backtest.get("start", "2018-01-01")),

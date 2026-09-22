@@ -32,17 +32,21 @@ def my_factors(
     ma50 = close.rolling(50, min_periods=50).mean()
     ma200 = close.rolling(200, min_periods=200).mean()
     high21 = close.rolling(21, min_periods=21).max()
+    low21 = close.rolling(21, min_periods=21).min()
 
     # 日线政权距离：对应旧策略 close vs MA50
-    out["my_ma50_gap"] = close / ma50 - 1#均綫偏離因子
+    out["my_ma50_gap"] = close / ma50 - 1  # 均线偏离因子
 
     # 日线结构：对应旧策略 MA5 与 MA20 同向
     out["my_struct_gap"] = (ma5 - ma20) / close.replace(0, pd.NA)
 
-    # 离 21 日高：用来量「有没有空间」，不是单独开仓条件
+    # 离 21 日高：多头用来量「有没有回踩空间」
     out["my_dd_from_high_21"] = close / high21 - 1
 
-    # 长线政权：方案 B 硬过滤
+    # 离 21 日低：空头用来量「有没有反弹可卖」（正数 = 离低点涨了多少）
+    out["my_dist_from_low_21"] = close / low21.replace(0, pd.NA) - 1
+
+    # 长线政权：多空方向闸门
     out["my_ma200_gap"] = close / ma200 - 1
 
     if high is not None and low is not None:

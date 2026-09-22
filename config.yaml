@@ -28,17 +28,20 @@ strategy:
     - my_struct_gap
   invert: []                 # 负 IC 才把因子名放这里
   top_n: 10
-  require_above_ma200: true  # 方案 B：不准逆着日线 MA200 开多
-  allow_short: false
+  require_above_ma200: true  # 多头必须在日线 MA200 上方
+  allow_short: true          # true = MA200 当多空闸门：线上做多、线下做空
   space_col: my_dd_from_high_21
-  space_min: -0.12           # 离 21 日高低过 12% 视为空间不够或结构坏了
-  space_max: -0.01           # 至少离开高点 1%，避免追顶
+  space_min: -0.12           # 多头：离 21 日高最多回撤 12%
+  space_max: -0.01           # 多头：至少离开高点 1%，避免追顶
+  short_space_col: my_dist_from_low_21
+  short_space_min: 0.01      # 空头：至少离开 21 日低 1%，避免追水清盘
+  short_space_max: 0.12      # 空头：离低点反弹不超过 12%，避免结构已修复
   min_atr_pct: 0.010
-  max_hold: 4                # 组合最多同时持有；观察池仍是 top_n
+  max_hold: 4                # 每侧最多同时持有；观察池仍是每侧 top_n
 
 backtest:
   start: "2018-01-01"
   end: null
   cost_bps: 10               # 单边滑点+佣金，单位 bp
-  exec: next_close           # 第一版：T 日收盘定池，T+1 收益用滞后权重
+  exec: next_close           # T 日收盘定池，T+1 收益用滞后权重
   initial_cash: 20000
