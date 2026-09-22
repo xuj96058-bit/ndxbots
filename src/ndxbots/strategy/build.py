@@ -14,6 +14,21 @@ def pool_dir(settings) -> Path:
     return settings.data_root / "strategy"
 
 
+def _print_side(watch: pd.DataFrame, side: str, max_hold: int) -> None:
+    part = watch[watch["side"] == side]
+    if part.empty:
+        print(f"\n{side} 观察池为空。")
+        return
+    show = part.copy()
+    for c in show.columns:
+        if show[c].dtype == float:
+            show[c] = show[c].round(4)
+    print(f"\n{side} 池（in_pool）:")
+    print(show.to_string(index=False))
+    hold = part[part["in_hold"]]
+    print(f"回测本侧会持有前 {len(hold)} 档（max_hold={max_hold}）")
+
+
 def run_build() -> None:
     settings = load_settings()
     path = factor_path(settings)
@@ -37,20 +52,16 @@ def run_build() -> None:
     print(f"观察池已写 {pool_path}  日期={pool['date'].max().date() if len(pool) else '-'}")
     print(
         f"规则: 因子={list(settings.strategy_factors)}  "
-        f"TopN={settings.strategy_top_n}  最多持仓={settings.max_hold}  "
-        f"MA200过滤={settings.require_above_ma200}"
+        f"TopN={settings.strategy_top_n}  每侧最多持仓={settings.max_hold}  "
+        f"MA200过滤={settings.require_above_ma200}  "
+        f"允许做空={settings.allow_short}"
     )
     if watch.empty:
         print("今日观察池为空。")
         return
-    show = watch.copy()
-    for c in show.columns:
-        if show[c].dtype == float:
-            show[c] = show[c].round(4)
-    print("\n明日可盯（in_pool）:")
-    print(show.to_string(index=False))
-    hold = watch[watch["in_hold"]]
-    print(f"\n第一版回测实际会持有前 {len(hold)} 档（max_hold={settings.max_hold}）")
+    _print_side(watch, "long", settings.max_hold)
+    if settings.allow_short:
+        _print_side(watch, "short", settings.max_hold)
 
 
 def main() -> None:
