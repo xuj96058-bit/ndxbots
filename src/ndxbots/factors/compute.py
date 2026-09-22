@@ -101,6 +101,7 @@ def run_compute() -> None:
             "my_ma50_gap",
             "my_struct_gap",
             "my_dd_from_high_21",
+            "my_dist_from_low_21",
             "my_ma200_gap",
             "my_atr_pct",
             "ret_21",
