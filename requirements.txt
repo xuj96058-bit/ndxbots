@@ -1,0 +1,5 @@
+futu-api>=9.0.0
+pandas>=2.1.0
+pyarrow>=14.0.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.1

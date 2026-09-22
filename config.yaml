@@ -1,0 +1,44 @@
+futu:
+  host: 127.0.0.1
+  port: 11111
+
+data:
+  root: data
+  kline_start: "2016-01-01"
+  request_sleep_sec: 0.35
+  max_count: 1000
+
+universe:
+  # 优先用富途板块拉当前成分；失败则用内置兜底名单
+  prefer_futu_plate: true
+  plate_keywords:
+    - 纳斯达克100
+    - 纳斯达克 100
+    - NASDAQ 100
+    - NASDAQ-100
+    - NDX
+  benchmark: US.QQQ
+  extra_codes:
+    - US.QQQ
+
+# 选股层：日线因子 → 观察池。执行层（15m / v7）只许盯池内股票。
+strategy:
+  factors:
+    - my_ma50_gap
+    - my_struct_gap
+  invert: []                 # 负 IC 才把因子名放这里
+  top_n: 10
+  require_above_ma200: true  # 方案 B：不准逆着日线 MA200 开多
+  allow_short: false
+  space_col: my_dd_from_high_21
+  space_min: -0.12           # 离 21 日高低过 12% 视为空间不够或结构坏了
+  space_max: -0.01           # 至少离开高点 1%，避免追顶
+  min_atr_pct: 0.010
+  max_hold: 4                # 组合最多同时持有；观察池仍是 top_n
+
+backtest:
+  start: "2018-01-01"
+  end: null
+  cost_bps: 10               # 单边滑点+佣金，单位 bp
+  exec: next_close           # 第一版：T 日收盘定池，T+1 收益用滞后权重
+  initial_cash: 20000

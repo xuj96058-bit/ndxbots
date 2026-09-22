@@ -1,0 +1,58 @@
+futu:
+  host: 127.0.0.1
+  port: 11111
+
+data:
+  root: data
+  # 下载日 K 的闭区间。ingest 会把这两天传给富途 request_history_kline。
+  # 已有本地文件且不加 --full-refresh 时，从本地最后一天的次日续拉，但仍不会超过 kline_end。
+  kline_start: "2016-01-01"
+  kline_end: "2026-09-01"
+  # 富途历史 K 限制：每 30 秒最多 60 次。0.35 会超限。
+  # 按年切片后每只大约 11 次请求，0.6s 间隔全市场约 15–20 分钟。
+  request_sleep_sec: 0.6
+  max_count: 1000
+
+universe:
+  # 优先用富途板块拉当前成分；失败则用内置兜底名单
+  prefer_futu_plate: true
+  plate_keywords:
+    - 纳斯达克100
+    - 纳斯达克 100
+    - NASDAQ 100
+    - NASDAQ-100
+    - NDX
+  benchmark: US.QQQ
+  extra_codes:
+    - US.QQQ
+
+# 选股层：日线因子 → 观察池。执行层（15m / v7）只许盯池内股票。
+# 全部因子都会写进 daily.parquet；只有 factors 列表参与排名。
+strategy:
+  factors:
+    - my_ma50_gap
+    - my_struct_gap
+    - my_macd_hist
+    - my_macd_div
+  invert: []                 # 负 IC 才把因子名放这里
+  top_n: 10
+  require_above_ma200: true  # 方案 B：不准逆着日线 MA200 开多
+  allow_short: false
+  require_can_open: true     # regime + struct + MA200，对应旧 can_open_long
+  require_weekly_regime: false
+  require_h4_perm: false     # 现为日线代理，打开会更严
+  require_h1_pullback: false
+  space_col: my_dd_from_high_21
+  space_min: -0.12           # 离 21 日高低过 12% 视为空间不够或结构坏了
+  space_max: -0.01           # 至少离开高点 1%，避免追顶
+  min_atr_pct: 0.010
+  max_hold: 4                # 组合最多同时持有；观察池仍是 top_n
+
+# 回测切片，和上面的下载区间独立。
+# MA200 需要约 200 根预热，所以 bt start 可以晚于 kline_start。
+backtest:
+  start: "2016-01-01"
+  end: "2026-09-01"
+  cost_bps: 10               # 单边滑点+佣金，单位 bp
+  exec: next_close           # 第一版：T 日收盘定池，T+1 收益用滞后权重
+  initial_cash: 20000
