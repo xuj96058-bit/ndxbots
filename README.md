@@ -1,16 +1,16 @@
 # ndxbots
 
-纳斯达克 100 本地量化平台：从富途拉日 K，算因子，生成观察池，再和 QQQ 做日线回测。
+納斯達克 100 本機量化平台：從富途拉日 K，算因子，生成觀察池，再和 QQQ 做日線回測。
 
-行情和回测结果只存在你电脑的 `data/` 里，**不要上传到 GitHub**。
+行情和回測結果只存在你電腦的 `data/` 裡，**不要上傳到 GitHub**。
 
 ## 你需要先有的
 
 1. Python 3.10+
-2. 已安装并登录 [FutuOpenD](https://www.futunn.com/download/openAPI)（默认 `127.0.0.1:11111`）
-3. 富途账号已开通 **美股行情**
+2. 已安裝並登入 [FutuOpenD](https://www.futunn.com/download/openAPI)（預設 `127.0.0.1:11111`）
+3. 富途帳號已開通 **美股行情**
 
-## 安装（Windows）
+## 安裝（Windows）
 
 ```powershell
 cd ndxbots
@@ -19,44 +19,44 @@ python -m venv .venv
 pip install -e .
 ```
 
-Mac / Linux 把激活换成 `source .venv/bin/activate`。
+Mac / Linux 把啟動換成 `source .venv/bin/activate`。
 
-改连接或选股参数，编辑项目根目录的 `config.yaml`，不必改代码。
+改連線或選股參數，編輯專案根目錄的 `config.yaml`，不必改程式碼。
 
-## 每天怎么跑
+## 每天怎麼跑
 
-按顺序执行。前一步没成功，后面会找不到文件。
+按順序執行。前一步沒成功，後面會找不到檔案。
 
-### 1. 测连接
+### 1. 測連線
 
 ```powershell
 python -m ndxbots.data.check
 ```
 
-能打出 OpenD 地址和纳指 100 板块就说明通了。失败时先看 OpenD 是否启动、端口是否 11111、美股行情权限。
+能印出 OpenD 位址和納指 100 板塊就說明通了。失敗時先看 OpenD 是否啟動、連接埠是否 11111、美股行情權限。
 
-### 2. 拉日 K（第一次先试 2 只）
+### 2. 拉日 K（第一次先試 2 檔）
 
 ```powershell
 python -m ndxbots.data.ingest --codes US.AAPL US.QQQ
 python -m ndxbots.data.inspect_panel
 ```
 
-全市场成分 + QQQ：
+全市場成分 + QQQ：
 
 ```powershell
 python -m ndxbots.data.ingest
 ```
 
-第一次全量大约 10–20 分钟，保持 OpenD 开着。之后每天收盘后再跑同一条，只补缺的日期。
+第一次全量大約 10–20 分鐘，保持 OpenD 開著。之後每天收盤後再跑同一條，只補缺的日期。
 
-| 参数 | 作用 |
+| 參數 | 作用 |
 |---|---|
-| `--codes US.AAPL US.QQQ` | 只拉指定代码 |
-| `--limit 5` | 只拉前 5 只，试限频 |
-| `--full-refresh` | 忽略本地缓存，整段重拉 |
+| `--codes US.AAPL US.QQQ` | 只拉指定代碼 |
+| `--limit 5` | 只拉前 5 檔，試限頻 |
+| `--full-refresh` | 忽略本機快取，整段重拉 |
 
-价格为 **前复权**。成分优先用富途「纳斯达克100 / NDX」板块；搜不到就用内置兜底名单。
+價格為 **前復權**。成分優先用富途「納斯達克100 / NDX」板塊；搜不到就用內建兜底名單。
 
 ### 3. 算因子
 
@@ -64,54 +64,54 @@ python -m ndxbots.data.ingest
 python -m ndxbots.factors.compute
 ```
 
-会写出 `data/factors/daily.parquet`，包含动量、波动、RSI，以及 `custom.py` 里的 `my_*` 因子。
+會寫出 `data/factors/daily.parquet`，包含動量、波動、RSI，以及 `custom.py` 裡的 `my_*` 因子。
 
-自己加因子：编辑 `src/ndxbots/factors/custom.py`，再重新 compute。
+自己加因子：編輯 `src/ndxbots/factors/custom.py`，再重新 compute。
 
-可选，批量看哪些因子更能预测未来 21 日是否跑赢 QQQ：
+可選，批次看哪些因子更能預測未來 21 日是否跑贏 QQQ：
 
 ```powershell
 python -m ndxbots.factors.mine --horizon 21
 ```
 
-### 4. 生成观察池
+### 4. 生成觀察池
 
 ```powershell
 python -m ndxbots.strategy.build
 ```
 
-默认规则（均可在 `config.yaml` 的 `strategy` 段改）：
+預設規則（均可在 `config.yaml` 的 `strategy` 段改）：
 
-- 用 `my_ma50_gap`、`my_struct_gap` 截面排名打分
-- 收盘必须在日线 MA200 上方
-- 离 21 日高点回撤大约在 1%–12% 之间（避免追顶或结构坏掉）
+- 用 `my_ma50_gap`、`my_struct_gap` 橫截排名打分
+- 收盤必須在日線 MA200 上方
+- 離 21 日高點回撤大約在 1%–12% 之間（避免追頂或結構壞掉）
 - ATR 太小不做
-- 观察池 Top 10，真正持仓最多 4 只
+- 觀察池 Top 10，真正持倉最多 4 檔
 
-执行层只许盯池内股票。
+執行層只許盯池內股票。
 
-### 5. 回测（对齐 QQQ）
+### 5. 回測（對齊 QQQ）
 
 ```powershell
 python -m ndxbots.backtest
 ```
 
-T 日收盘定池，权重作用在 T+1 收益上（`next_close`），单边成本默认 10 bp，初始资金 20000。摘要会打印到屏幕，并写入 `data/backtest/stats.txt`。
+T 日收盤定池，權重作用在 T+1 收益上（`next_close`），單邊成本預設 10 bp，初始資金 20000。摘要會列印到螢幕，並寫入 `data/backtest/stats.txt`。
 
-## 目录
+## 目錄
 
 ```text
-config.yaml                 连接、区间、选股、回测参数
-src/ndxbots/data/           拉行情、检查、面板
+config.yaml                 連線、區間、選股、回測參數
+src/ndxbots/data/           拉行情、檢查、面板
 src/ndxbots/factors/        算因子、挖因子
-src/ndxbots/strategy/       打分、观察池
-src/ndxbots/backtest/       日线回测
-ndxbots_patch/              历史补丁副本（源码已合并进 src/，一般不用再拷）
+src/ndxbots/strategy/       打分、觀察池
+src/ndxbots/backtest/       日線回測
+ndxbots_patch/              歷史補丁副本（原始碼已合併進 src/，一般不用再拷）
 
-data/                       本机生成，已加入 .gitignore
-  raw/kline/                每只股票一个 parquet
-  panel/daily.parquet       对齐后的长表
-  meta/universe.csv         成分来源
+data/                       本機生成，已加入 .gitignore
+  raw/kline/                每檔股票一個 parquet
+  panel/daily.parquet       對齊後的長表
+  meta/universe.csv         成分來源
   meta/us_trading_days.parquet
   factors/daily.parquet
   mining/factor_ranking.csv
@@ -122,16 +122,16 @@ data/                       本机生成，已加入 .gitignore
   backtest/stats.txt
 ```
 
-面板字段大致为：`date, code, open, high, low, close, volume, turnover, pe_ratio, ...`。代码带 `US.` 前缀。
+面板欄位大致為：`date, code, open, high, low, close, volume, turnover, pe_ratio, ...`。代碼帶 `US.` 前綴。
 
-## 常用配置
+## 常用設定
 
-`config.yaml` 里这几项最常改：
+`config.yaml` 裡這幾項最常改：
 
 ```yaml
 data:
-  kline_start: "2016-01-01"   # 下载起点
-  # kline_end: "2026-09-01"   # 不写 = 拉到最新
+  kline_start: "2016-01-01"   # 下載起點
+  # kline_end: "2026-09-01"   # 不寫 = 拉到最新
 
 strategy:
   factors: [my_ma50_gap, my_struct_gap]
@@ -140,18 +140,18 @@ strategy:
   require_above_ma200: true
 
 backtest:
-  start: "2018-01-01"         # 回测起点，更早的数据留给 MA200 预热
+  start: "2018-01-01"         # 回測起點，更早的資料留給 MA200 預熱
   cost_bps: 10
   initial_cash: 20000
 ```
 
-临时覆盖（可选）：环境变量 `FUTU_HOST`、`FUTU_PORT`、`KLINE_START`、`KLINE_END`、`DATA_DIR`。
+臨時覆寫（可選）：環境變數 `FUTU_HOST`、`FUTU_PORT`、`KLINE_START`、`KLINE_END`、`DATA_DIR`。
 
 ## 不要提交到 GitHub
 
-- `.venv/` 虚拟环境
-- `.env` 密钥
-- `data/` 行情和回测结果
+- `.venv/` 虛擬環境
+- `.env` 金鑰
+- `data/` 行情和回測結果
 - `__pycache__/`、`.idea/`
 
-`.gitignore` 已经挡住这些。用网页拖文件时，请不要选择它们。
+`.gitignore` 已經擋住這些。用網頁拖檔案時，請不要選擇它們。
