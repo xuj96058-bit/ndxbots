@@ -60,7 +60,9 @@ def _lock_regime_side(df: pd.DataFrame, settings: Settings) -> pd.Series:
         if code != last_code:
             last_code = code
             last_side = None
-        if zone in {"strong_long", "weak_long"}:
+        if pd.isna(zone):
+            last_side = None
+        elif zone in {"strong_long", "weak_long"}:
             last_side = "long"
         elif zone in {"strong_short", "weak_short"}:
             last_side = "short"
