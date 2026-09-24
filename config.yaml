@@ -28,8 +28,14 @@ strategy:
     - my_struct_gap
   invert: []                 # 负 IC 才把因子名放这里
   top_n: 10
-  require_above_ma200: true  # 多头必须在日线 MA200 上方
-  allow_short: true          # true = MA200 当多空闸门：线上做多、线下做空
+  require_above_ma200: true  # 新开多仍须在 MA200 上方；走平沿用旧多时允许留在缓冲带
+  allow_short: true          # true = 允许空头池
+  ma200_buffer: 0.015        # 新开仓：收盘须离开 MA200 至少 1.5%
+  slope_atr_strong: 1.5      # |Slope_ATR| 大于此为强趋势，允许新开
+  slope_atr_flat: 0.5        # |Slope_ATR| 小于此为走平（与强档互斥）
+  slope_pct_floor: 0.0025    # |s_20| 小于 0.25% 强制走平，避免微噪被 ATR 放大
+  slope_weak_no_new: true    # 弱趋势只留旧仓，不纳新票
+  flat_keep_prev: true       # 走平沿用昨天方向；false = 走平强制空仓
   space_col: my_dd_from_high_21
   space_min: -0.12           # 多头：离 21 日高最多回撤 12%
   space_max: -0.01           # 多头：至少离开高点 1%，避免追顶
