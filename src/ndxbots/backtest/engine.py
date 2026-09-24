@@ -68,7 +68,7 @@ def run_backtest(
     if bench not in close.columns:
         raise SystemExit(f"面板里没有基准 {bench}")
 
-    cols = ["date", "code", "score", "pool_rank", "short_pool_rank", "side"]
+    cols = ["date", "code", "score", "pool_rank", "short_pool_rank", "side", "slope_zone"]
     cols = [c for c in cols if c in scored.columns]
     hold = scored[scored["in_hold"]][cols].copy()
     if hold.empty:
@@ -120,9 +120,13 @@ def run_backtest(
             "my_dd_from_high_21",
             "my_dist_from_low_21",
             "my_ma200_gap",
+            "my_ma200_slope",
+            "my_ma200_slope_atr",
             "my_atr_pct",
             "long_score",
             "short_score",
+            "slope_zone",
+            "regime_side",
         ]
         if c in scored.columns
     ]
@@ -164,7 +168,7 @@ def _summarize(curve: pd.DataFrame, settings: Settings) -> str:
     win = float((p > 0).mean())
     cash_days = float((c["n_hold"] == 0).mean()) if "n_hold" in c.columns else 0.0
     lines = [
-        "引擎 ndxbots.backtest  日线观察池（MA200 多空闸门）",
+        "引擎 ndxbots.backtest  日线观察池（MA200 斜率闸门）",
         f"区间 {c['date'].iloc[0].date()} ~ {c['date'].iloc[-1].date()}  交易日 {days}",
         f"期初 {settings.initial_cash:,.2f}  期末 {port_end:,.2f}  收益 {port_tot*100:.2f}%  年化 {port_ann*100:.2f}%",
         f"QQQ  期末 {bench_end:,.2f}  收益 {bench_tot*100:.2f}%  年化 {bench_ann*100:.2f}%",
@@ -174,7 +178,8 @@ def _summarize(curve: pd.DataFrame, settings: Settings) -> str:
         f"日均多 {c['n_long'].mean():.2f}  日均空 {c['n_short'].mean():.2f}  "
         f"日均净曝光 {c['net_exp'].mean():.2f}  日均毛曝光 {c['gross_exp'].mean():.2f}",
         f"成本单边 {settings.cost_bps:.1f}bp  TopN观察 {settings.strategy_top_n}  每侧持仓上限 {settings.max_hold}",
-        f"因子 {list(settings.strategy_factors)}  MA200过滤={settings.require_above_ma200}  做空={settings.allow_short}",
+        f"因子 {list(settings.strategy_factors)}  缓冲={settings.ma200_buffer}  "
+        f"Slope强={settings.slope_atr_strong}  走平={settings.slope_atr_flat}  做空={settings.allow_short}",
         "成交假设: T 日收盘定池，权重滞后 1 日再乘收益（近似 T+1 开盘调仓）",
         "空头为负权重；两侧同时有仓时各占 50% 资金。本版不做 15m 回踩/加仓。",
     ]

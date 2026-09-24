@@ -103,6 +103,8 @@ def run_compute() -> None:
             "my_dd_from_high_21",
             "my_dist_from_low_21",
             "my_ma200_gap",
+            "my_ma200_slope",
+            "my_ma200_slope_atr",
             "my_atr_pct",
             "ret_21",
             "rsi_14",
