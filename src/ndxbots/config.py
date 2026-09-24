@@ -83,6 +83,12 @@ class Settings:
     short_space_max: float
     min_atr_pct: float
     max_hold: int
+    ma200_buffer: float
+    slope_atr_strong: float
+    slope_atr_flat: float
+    slope_pct_floor: float
+    slope_weak_no_new: bool
+    flat_keep_prev: bool
 
     # ---------- backtest ----------
     bt_start: str
@@ -137,6 +143,12 @@ def load_settings() -> Settings:
         short_space_max=float(strategy.get("short_space_max", 0.12)),
         min_atr_pct=float(strategy.get("min_atr_pct", 0.01)),
         max_hold=int(strategy.get("max_hold", 4)),
+        ma200_buffer=float(strategy.get("ma200_buffer", 0.015)),
+        slope_atr_strong=float(strategy.get("slope_atr_strong", 1.5)),
+        slope_atr_flat=float(strategy.get("slope_atr_flat", 0.5)),
+        slope_pct_floor=float(strategy.get("slope_pct_floor", 0.0025)),
+        slope_weak_no_new=bool(strategy.get("slope_weak_no_new", True)),
+        flat_keep_prev=bool(strategy.get("flat_keep_prev", True)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
