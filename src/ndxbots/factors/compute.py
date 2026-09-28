@@ -100,14 +100,15 @@ def run_compute() -> None:
             "code",
             "my_ma50_gap",
             "my_struct_gap",
+            "my_rsi_14",
+            "my_bb_pctb",
+            "my_bb_width",
+            "my_macd_hist",
+            "my_macd_hist_chg",
             "my_dd_from_high_21",
-            "my_dist_from_low_21",
             "my_ma200_gap",
-            "my_ma200_slope",
-            "my_ma200_slope_atr",
             "my_atr_pct",
             "ret_21",
-            "rsi_14",
         ]
         if c in table.columns
     ]
