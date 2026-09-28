@@ -16,10 +16,18 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ndxbots.factors.price import rsi
+
 # 与 config.yaml 的 slope 视窗对齐。改视窗时两边一起改。
 MA200_SLOPE_N = 20
 MA200_SLOPE_N_FAST = 5
 ATR_SLOPE_N = 20
+
+BB_N = 20
+BB_K = 2.0
+MACD_FAST = 12
+MACD_SLOW = 26
+MACD_SIGNAL = 9
 
 
 def _true_range(
@@ -34,6 +42,15 @@ def _true_range(
         return pd.DataFrame(tr, index=close.index, columns=close.columns)
     ret = close.pct_change(fill_method=None).abs()
     return ret * close
+
+
+def _macd_parts(close: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    ema_fast = close.ewm(span=MACD_FAST, adjust=False).mean()
+    ema_slow = close.ewm(span=MACD_SLOW, adjust=False).mean()
+    macd = ema_fast - ema_slow
+    signal = macd.ewm(span=MACD_SIGNAL, adjust=False).mean()
+    hist = macd - signal
+    return macd, signal, hist
 
 
 def my_factors(
@@ -79,5 +96,30 @@ def my_factors(
     out["my_atr_pct"] = atr14 / close.replace(0, pd.NA)
     out["my_atr_pct_20"] = atr20 / close.replace(0, pd.NA)
     out["my_ma200_slope_atr"] = (ma200 - ma200_prev) / atr20.replace(0, pd.NA)
+
+    # ---------- RSI ----------
+    # 0–100，跨股可直接比。正 IC = 越强势越好；负 IC 可以 invert 当超买反转。
+    out["my_rsi_6"] = rsi(close, 6)
+    out["my_rsi_14"] = rsi(close, 14)
+    out["my_rsi_21"] = rsi(close, 21)
+    out["my_rsi_14_gap"] = out["my_rsi_14"] - 50  # 距离中轴，正数偏多
+
+    # ---------- 布林带 20, 2 ----------
+    bb_mid = close.rolling(BB_N, min_periods=BB_N).mean()
+    bb_std = close.rolling(BB_N, min_periods=BB_N).std()
+    bb_upper = bb_mid + BB_K * bb_std
+    bb_lower = bb_mid - BB_K * bb_std
+    bb_range = (bb_upper - bb_lower).replace(0, pd.NA)
+    out["my_bb_pctb"] = (close - bb_lower) / bb_range  # 0=下轨, 0.5=中轨, 1=上轨
+    out["my_bb_width"] = (bb_upper - bb_lower) / bb_mid.replace(0, pd.NA)
+    out["my_bb_gap"] = close / bb_mid.replace(0, pd.NA) - 1
+
+    # ---------- MACD 12/26/9，除以收盘价才能跨股排名 ----------
+    macd, signal, hist = _macd_parts(close)
+    px = close.replace(0, pd.NA)
+    out["my_macd"] = macd / px
+    out["my_macd_signal"] = signal / px
+    out["my_macd_hist"] = hist / px
+    out["my_macd_hist_chg"] = hist.diff() / px  # 柱状图是否正在放大
 
     return out
