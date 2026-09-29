@@ -24,18 +24,10 @@ def _slice_dates(df: pd.DataFrame, settings: Settings) -> pd.DataFrame:
 
 
 def _signed_weights(hold: pd.DataFrame) -> pd.Series:
-    """同侧等权。两侧都有仓时各占 50%；只有一侧时该侧 100%。空头为负权重。"""
-    is_long = hold["side"].eq("long")
-    is_short = hold["side"].eq("short")
-    n_long = hold.groupby("date")["side"].transform(lambda s: int(s.eq("long").sum()))
-    n_short = hold.groupby("date")["side"].transform(lambda s: int(s.eq("short").sum()))
-    both = (n_long > 0) & (n_short > 0)
-    w = pd.Series(0.0, index=hold.index)
-    w.loc[is_long & both] = 0.5 / n_long.loc[is_long & both]
-    w.loc[is_short & both] = -0.5 / n_short.loc[is_short & both]
-    w.loc[is_long & ~both] = 1.0 / n_long.loc[is_long & ~both]
-    w.loc[is_short & ~both] = -1.0 / n_short.loc[is_short & ~both]
-    return w
+    """全场最多 max_hold 档，每档等权。多头为正、空头为负。3 多 1 空则各 ±1/4。"""
+    n = hold.groupby("date")["code"].transform("size").clip(lower=1)
+    sign = hold["side"].map({"long": 1.0, "short": -1.0}).fillna(1.0)
+    return sign / n
 
 
 def run_backtest(
@@ -68,7 +60,19 @@ def run_backtest(
     if bench not in close.columns:
         raise SystemExit(f"面板里没有基准 {bench}")
 
-    cols = ["date", "code", "score", "pool_rank", "short_pool_rank", "side", "slope_zone"]
+    cols = [
+        "date",
+        "code",
+        "score",
+        "pool_rank",
+        "short_pool_rank",
+        "side",
+        "slope_zone",
+        "abs_strength",
+        "hold_days_long",
+        "hold_days_short",
+        *list(settings.strategy_factors),
+    ]
     cols = [c for c in cols if c in scored.columns]
     hold = scored[scored["in_hold"]][cols].copy()
     if hold.empty:
@@ -177,10 +181,10 @@ def _summarize(curve: pd.DataFrame, settings: Settings) -> str:
         f"日均换手 {c['turnover'].mean()*100:.2f}%  日均持股 {c['n_hold'].mean():.2f}  空仓天占比 {cash_days*100:.1f}%",
         f"日均多 {c['n_long'].mean():.2f}  日均空 {c['n_short'].mean():.2f}  "
         f"日均净曝光 {c['net_exp'].mean():.2f}  日均毛曝光 {c['gross_exp'].mean():.2f}",
-        f"成本单边 {settings.cost_bps:.1f}bp  TopN观察 {settings.strategy_top_n}  每侧持仓上限 {settings.max_hold}",
-        f"因子 {list(settings.strategy_factors)}  缓冲={settings.ma200_buffer}  "
-        f"Slope强={settings.slope_atr_strong}  走平={settings.slope_atr_flat}  做空={settings.allow_short}",
+        f"成本单边 {settings.cost_bps:.1f}bp  TopN观察 {settings.strategy_top_n}  全场持仓上限 {settings.max_hold}",
+        f"最少持有 {getattr(settings, 'min_hold_days', 10)} 日  留仓名次 {getattr(settings, 'keep_rank', 8)}  "
+        f"因子 {list(settings.strategy_factors)}  做空={settings.allow_short}",
         "成交假设: T 日收盘定池，权重滞后 1 日再乘收益（近似 T+1 开盘调仓）",
-        "空头为负权重；两侧同时有仓时各占 50% 资金。本版不做 15m 回踩/加仓。",
+        "全场 4 个坑由多空按因子绝对值抢；每档等权，空头为负。本版不做 15m 回踩/加仓。",
     ]
     return "\n".join(lines)
