@@ -42,19 +42,27 @@ def run_build() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     scored_path = out_dir / "scores.parquet"
     pool_path = out_dir / "observation_pool.csv"
+    exec_path = out_dir / "exec_pool.csv"
     scored.to_parquet(scored_path, index=False)
 
     pool = latest_pool(scored)
     watch = pool[pool["in_pool"]].copy()
     watch.to_csv(pool_path, index=False)
 
+    exec_cols = [c for c in ["date", "code", "side"] if c in watch.columns]
+    exec_pool = watch[exec_cols].copy() if not watch.empty else pd.DataFrame(columns=["date", "code", "side"])
+    exec_pool.to_csv(exec_path, index=False)
+
     print(f"打分表已写 {scored_path}  行数={len(scored)}")
     print(f"观察池已写 {pool_path}  日期={pool['date'].max().date() if len(pool) else '-'}")
+    print(f"执行池已写 {exec_path}  行数={len(exec_pool)}")
     print(
         f"规则: 因子={list(settings.strategy_factors)}  "
         f"TopN={settings.strategy_top_n}  每侧最多持仓={settings.max_hold}  "
         f"MA200过滤={settings.require_above_ma200}  "
-        f"允许做空={settings.allow_short}"
+        f"允许做空={settings.allow_short}  "
+        f"MACD闸={settings.macd_gate}  RSI闸={settings.rsi_gate}  "
+        f"带宽闸={settings.bb_width_gate}"
     )
     if watch.empty:
         print("今日观察池为空。")
