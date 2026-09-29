@@ -75,6 +75,40 @@ def _lock_regime_side(df: pd.DataFrame, settings: Settings) -> pd.Series:
     return out
 
 
+def _macd_new_ok(df: pd.DataFrame, settings: Settings) -> tuple[pd.Series, pd.Series]:
+    """连续两根 hist_chg 同向才许新开。开关关或缺栏则全通过。"""
+    ok_long = pd.Series(True, index=df.index)
+    ok_short = pd.Series(True, index=df.index)
+    if not settings.macd_gate or "my_macd_hist_chg" not in df.columns:
+        return ok_long, ok_short
+    chg = df["my_macd_hist_chg"]
+    prev = df.groupby("code", sort=False)["my_macd_hist_chg"].shift(1)
+    ok_long = (chg > 0) & (prev > 0)
+    ok_short = (chg < 0) & (prev < 0)
+    return ok_long.fillna(False), ok_short.fillna(False)
+
+
+def _rsi_new_ok(df: pd.DataFrame, settings: Settings) -> tuple[pd.Series, pd.Series]:
+    ok_long = pd.Series(True, index=df.index)
+    ok_short = pd.Series(True, index=df.index)
+    if not settings.rsi_gate or "my_rsi_14" not in df.columns:
+        return ok_long, ok_short
+    rsi = df["my_rsi_14"]
+    ok_long = rsi.le(settings.rsi_long_max)
+    ok_short = rsi.ge(settings.rsi_short_min)
+    return ok_long.fillna(False), ok_short.fillna(False)
+
+
+def _bb_width_ok(df: pd.DataFrame, settings: Settings) -> pd.Series:
+    if not settings.bb_width_gate or "my_bb_width" not in df.columns:
+        return pd.Series(True, index=df.index)
+    width = df["my_bb_width"]
+    if settings.bb_width_min is not None:
+        return (width >= settings.bb_width_min).fillna(False)
+    ranked = df.groupby("date", sort=False)["my_bb_width"].transform(_cs_rank)
+    return (ranked >= settings.bb_width_pct_min).fillna(False)
+
+
 def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame:
     """给每天每只股票打综合分，并用 MA200 斜率当多空闸门。
 
@@ -84,6 +118,7 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
       -flat ~ +flat     走平，禁止反手和新开（默认沿用昨天方向）
       -strong ~ -flat   弱空，只顺势、默认不纳新
       < -strong         强空，允许新开空
+    MACD / RSI 只卡新开；带宽卡整票。开关默认关。
     """
     df = factors.copy()
     df["date"] = pd.to_datetime(df["date"]).dt.normalize()
@@ -178,16 +213,33 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
             )
             | (zone.eq("flat") & settings.flat_keep_prev & prev_short)
         )
+        new_long = zone.eq("strong_long") | (zone.eq("weak_long") & ~prev_long)
+        new_short = zone.eq("strong_short") | (zone.eq("weak_short") & ~prev_short)
     else:
         long_dir = df["above_ma200"]
         short_dir = df["below_ma200"]
+        new_long = long_dir & ~prev_long
+        new_short = short_dir & ~prev_short
 
     if settings.require_above_ma200 and not use_slope:
         long_dir = long_dir & df["above_ma200"]
 
-    long_eligible = df["long_score"].notna() & df["atr_ok"] & df["space_ok"] & long_dir
+    macd_long_ok, macd_short_ok = _macd_new_ok(df, settings)
+    rsi_long_ok, rsi_short_ok = _rsi_new_ok(df, settings)
+    df["bb_width_ok"] = _bb_width_ok(df, settings)
+    df["macd_ok"] = (~new_long | macd_long_ok) if settings.macd_gate else True
+    df["rsi_ok"] = (~new_long | rsi_long_ok) if settings.rsi_gate else True
+
+    long_eligible = (
+        df["long_score"].notna()
+        & df["atr_ok"]
+        & df["space_ok"]
+        & df["bb_width_ok"]
+        & long_dir
+        & (~new_long | macd_long_ok)
+        & (~new_long | rsi_long_ok)
+    )
     if settings.require_above_ma200 and use_slope:
-        new_long = zone.eq("strong_long") | (zone.eq("weak_long") & ~prev_long)
         long_eligible &= (~new_long) | df["above_ma200"]
 
     short_eligible = pd.Series(False, index=df.index)
@@ -196,7 +248,10 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
             df["short_score"].notna()
             & df["atr_ok"]
             & df["short_space_ok"]
+            & df["bb_width_ok"]
             & short_dir
+            & (~new_short | macd_short_ok)
+            & (~new_short | rsi_short_ok)
         )
 
     df["eligible"] = long_eligible | short_eligible
@@ -252,6 +307,7 @@ def latest_pool(scored: pd.DataFrame) -> pd.DataFrame:
             "space_ok",
             "short_space_ok",
             "atr_ok",
+            "bb_width_ok",
             "my_ma50_gap",
             "my_struct_gap",
             "my_dd_from_high_21",
@@ -260,6 +316,9 @@ def latest_pool(scored: pd.DataFrame) -> pd.DataFrame:
             "my_ma200_slope",
             "my_ma200_slope_atr",
             "my_atr_pct",
+            "my_rsi_14",
+            "my_bb_width",
+            "my_macd_hist_chg",
         ]
         if c in scored.columns
     ]
