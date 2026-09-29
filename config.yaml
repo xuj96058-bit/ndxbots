@@ -44,7 +44,9 @@ strategy:
   short_space_min: 0.01      # 空头：至少离开 21 日低 1%，避免追水清盘
   short_space_max: 0.12      # 空头：离低点反弹不超过 12%，避免结构已修复
   min_atr_pct: 0.010
-  max_hold: 4                # 每侧最多同时持有；观察池仍是每侧 top_n
+  max_hold: 4                # 全场合计最多 4 档，多空抢同一组名额
+  min_hold_days: 10          # 旧仓至少持有这么多交易日才允许因排名被踢
+  keep_rank: 8               # 没掉出该名次就继续留（仍受全场 4 档上限约束）
   # --- 备援闸门，默认关。一次只开一个，对照现行基准 ---
   macd_gate: false           # 新开多要连续两根 hist_chg>0，新开空两根<0
   rsi_gate: false            # 只卡新开，不踢旧仓

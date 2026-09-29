@@ -83,10 +83,13 @@ python -m ndxbots.strategy.build
 預設規則（均可在 `config.yaml` 的 `strategy` 段改）：
 
 - 用 `my_ma50_gap`、`my_struct_gap` 橫截排名打分
-- 收盤必須在日線 MA200 上方
+- MA200 斜率五段決定多空方向；新開多仍須在 MA200 上方
 - 離 21 日高點回撤大約在 1%–12% 之間（避免追頂或結構壞掉）
 - ATR 太小不做
-- 觀察池 Top 10，真正持倉最多 4 檔
+- 觀察池每側 Top 10
+- 全場真正持倉最多 4 檔，多空用因子絕對值搶同一組名額
+- 舊倉至少持有 10 個交易日；該側沒掉出第 8 名就繼續留
+- 每檔等權，空頭為負（例如 3 多 1 空 = 各 ±25%）
 
 執行層只許盯池內股票。
 
@@ -136,7 +139,9 @@ data:
 strategy:
   factors: [my_ma50_gap, my_struct_gap]
   top_n: 10
-  max_hold: 4
+  max_hold: 4          # 全场合计，不是每侧 4 档
+  min_hold_days: 10
+  keep_rank: 8
   require_above_ma200: true
 
 backtest:
