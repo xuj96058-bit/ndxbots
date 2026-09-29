@@ -274,10 +274,119 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
 
     df["in_pool_long"] = df["pool_rank"].le(settings.strategy_top_n).fillna(False)
     df["in_pool_short"] = df["short_pool_rank"].le(settings.strategy_top_n).fillna(False)
-    df["in_hold_long"] = df["pool_rank"].le(settings.max_hold).fillna(False)
-    df["in_hold_short"] = df["short_pool_rank"].le(settings.max_hold).fillna(False)
+    df = apply_holding_hysteresis(df, settings)
     df["in_pool"] = df["in_pool_long"] | df["in_pool_short"]
     df["in_hold"] = df["in_hold_long"] | df["in_hold_short"]
+    return df
+
+
+def _abs_strength_row(df: pd.DataFrame, i, factor_cols: tuple[str, ...]) -> float:
+    vals = []
+    for col in factor_cols:
+        if col not in df.columns:
+            continue
+        v = df.at[i, col]
+        if pd.notna(v):
+            vals.append(abs(float(v)))
+    if vals:
+        return float(sum(vals) / len(vals))
+    score = df.at[i, "score"] if "score" in df.columns else float("nan")
+    return abs(float(score)) if pd.notna(score) else 0.0
+
+
+def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """全场最多 max_hold 档。多空用打分因子绝对值抢同一组坑。
+
+    旧仓未满 min_hold_days，或该侧排名仍 <= keep_rank，优先留。
+    剩下来的坑按 |因子| 从高到低补。
+    """
+    min_days = int(getattr(settings, "min_hold_days", 10))
+    keep_rank = int(getattr(settings, "keep_rank", 8))
+    max_hold = int(settings.max_hold)
+    factor_cols = tuple(settings.strategy_factors)
+
+    df = df.copy()
+    df["hold_days_long"] = 0
+    df["hold_days_short"] = 0
+    df["in_hold_long"] = False
+    df["in_hold_short"] = False
+    df["abs_strength"] = 0.0
+
+    dates = sorted(df["date"].unique())
+    prev: dict[str, tuple[str, int]] = {}
+
+    for day in dates:
+        idx = df.index[df["date"].eq(day)]
+        meta: dict[str, dict] = {}
+        for i in idx:
+            code = str(df.at[i, "code"])
+            strength = _abs_strength_row(df, i, factor_cols)
+            df.at[i, "abs_strength"] = strength
+            pr = df.at[i, "pool_rank"]
+            sr = df.at[i, "short_pool_rank"]
+            meta[code] = {
+                "i": i,
+                "strength": strength,
+                "long_rank": float(pr) if pd.notna(pr) else None,
+                "short_rank": float(sr) if pd.notna(sr) else None,
+            }
+
+        kept: dict[str, tuple[str, int]] = {}
+        for code, (side, days) in prev.items():
+            if code not in meta:
+                continue
+            held = days + 1
+            info = meta[code]
+            rank = info["long_rank"] if side == "long" else info["short_rank"]
+            still_ranked = rank is not None and rank <= keep_rank
+            if held < min_days or still_ranked:
+                kept[code] = (side, held)
+
+        if len(kept) > max_hold:
+            locked = {c: v for c, v in kept.items() if v[1] < min_days}
+            extra = {c: v for c, v in kept.items() if c not in locked}
+            room = max(0, max_hold - len(locked))
+            ranked = sorted(
+                extra.items(),
+                key=lambda kv: meta[kv[0]]["strength"],
+                reverse=True,
+            )
+            kept = dict(locked)
+            for code, val in ranked[:room]:
+                kept[code] = val
+
+        if len(kept) < max_hold:
+            cands = []
+            for code, info in meta.items():
+                if code in kept:
+                    continue
+                if info["long_rank"] is not None and info["short_rank"] is not None:
+                    side = "long" if info["long_rank"] <= info["short_rank"] else "short"
+                    cands.append((info["strength"], side, code))
+                elif info["long_rank"] is not None:
+                    cands.append((info["strength"], "long", code))
+                elif info["short_rank"] is not None:
+                    cands.append((info["strength"], "short", code))
+            cands.sort(key=lambda x: (-x[0], x[1], x[2]))
+            for _, side, code in cands:
+                if len(kept) >= max_hold:
+                    break
+                if code in kept:
+                    continue
+                kept[code] = (side, 1)
+
+        for code, (side, days) in kept.items():
+            i = meta[code]["i"]
+            df.at[i, "side"] = side
+            if side == "long":
+                df.at[i, "in_hold_long"] = True
+                df.at[i, "hold_days_long"] = days
+            else:
+                df.at[i, "in_hold_short"] = True
+                df.at[i, "hold_days_short"] = days
+
+        prev = kept
+
     return df
 
 
@@ -302,6 +411,11 @@ def latest_pool(scored: pd.DataFrame) -> pd.DataFrame:
             "in_hold",
             "in_pool_long",
             "in_pool_short",
+            "in_hold_long",
+            "in_hold_short",
+            "hold_days_long",
+            "hold_days_short",
+            "abs_strength",
             "above_ma200",
             "below_ma200",
             "space_ok",
