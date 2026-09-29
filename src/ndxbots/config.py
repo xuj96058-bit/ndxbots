@@ -9,7 +9,7 @@ from __future__ import annotations
     3. 环境变量 或 .env（python-dotenv 在 import 时已 load_dotenv）
 
 本文件只负责「读出来变成 Settings」，不要在这里写业务逻辑。
-改日期区间、选股参数、回测费用，优先改 config.yaml，不要改代码默认值。
+改日期区间、选股參數、回测费用，优先改 config.yaml，不要改代码默认值。
 """
 
 import os
@@ -90,6 +90,8 @@ class Settings:
     short_space_max: float
     min_atr_pct: float
     max_hold: int
+    min_hold_days: int
+    keep_rank: int
     ma200_buffer: float
     slope_atr_strong: float
     slope_atr_flat: float
@@ -157,6 +159,8 @@ def load_settings() -> Settings:
         short_space_max=float(strategy.get("short_space_max", 0.12)),
         min_atr_pct=float(strategy.get("min_atr_pct", 0.01)),
         max_hold=int(strategy.get("max_hold", 4)),
+        min_hold_days=int(strategy.get("min_hold_days", 10)),
+        keep_rank=int(strategy.get("keep_rank", 8)),
         ma200_buffer=float(strategy.get("ma200_buffer", 0.015)),
         slope_atr_strong=float(strategy.get("slope_atr_strong", 1.5)),
         slope_atr_flat=float(strategy.get("slope_atr_flat", 0.5)),
