@@ -44,6 +44,13 @@ def _optional_str(value: object | None) -> str | None:
     return text
 
 
+def _optional_float(value: object | None) -> float | None:
+    text = _optional_str(value)
+    if text is None:
+        return None
+    return float(text)
+
+
 @dataclass(frozen=True)
 class Settings:
     """
@@ -89,6 +96,13 @@ class Settings:
     slope_pct_floor: float
     slope_weak_no_new: bool
     flat_keep_prev: bool
+    macd_gate: bool
+    rsi_gate: bool
+    rsi_long_max: float
+    rsi_short_min: float
+    bb_width_gate: bool
+    bb_width_min: float | None
+    bb_width_pct_min: float
 
     # ---------- backtest ----------
     bt_start: str
@@ -149,6 +163,13 @@ def load_settings() -> Settings:
         slope_pct_floor=float(strategy.get("slope_pct_floor", 0.0025)),
         slope_weak_no_new=bool(strategy.get("slope_weak_no_new", True)),
         flat_keep_prev=bool(strategy.get("flat_keep_prev", True)),
+        macd_gate=bool(strategy.get("macd_gate", False)),
+        rsi_gate=bool(strategy.get("rsi_gate", False)),
+        rsi_long_max=float(strategy.get("rsi_long_max", 80)),
+        rsi_short_min=float(strategy.get("rsi_short_min", 20)),
+        bb_width_gate=bool(strategy.get("bb_width_gate", False)),
+        bb_width_min=_optional_float(strategy.get("bb_width_min")),
+        bb_width_pct_min=float(strategy.get("bb_width_pct_min", 0.20)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
