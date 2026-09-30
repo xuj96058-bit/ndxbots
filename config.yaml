@@ -28,7 +28,7 @@ strategy:
     - my_ma50_gap
     - my_struct_gap
   invert: []                 # 负 IC 才把因子名放这里
-  top_n: 10
+  top_n: 10                  # 多空合并观察池一共 10 档
   require_above_ma200: true  # 新开多仍须在 MA200 上方；走平沿用旧多时允许留在缓冲带
   allow_short: true          # true = 允许空头池
   ma200_buffer: 0.015        # 新开仓：收盘须离开 MA200 至少 1.5%
@@ -47,14 +47,24 @@ strategy:
   max_hold: 4                # 全场合计最多 4 档，多空抢同一组名额
   min_hold_days: 10          # 旧仓至少持有这么多交易日才允许因排名被踢
   keep_rank: 8               # 没掉出该名次就继续留（仍受全场 4 档上限约束）
-  # --- 备援闸门，默认关。一次只开一个，对照现行基准 ---
   macd_gate: false           # 新开多要连续两根 hist_chg>0，新开空两根<0
-  rsi_gate: false            # 只卡新开，不踢旧仓
-  rsi_long_max: 80
-  rsi_short_min: 20
-  bb_width_gate: false       # 带宽太窄整票不做
+  rsi_gate: true             # 只卡新开，不踢旧仓
+  rsi_long_max: 75
+  rsi_short_min: 25
+  bb_width_gate: true        # 带宽太窄整票不做
   bb_width_min: null         # 有数字就用绝对下限；否则用截面分位
   bb_width_pct_min: 0.20     # 当天带宽秩分位低于此则剔除
+  qqq_regime_gate: true
+  qqq_ret_col: ret_21        # 用 QQQ 近 21 日涨跌（因子表已有）
+  qqq_rally_ret: 0.06        # 大涨：QQQ 21 日 >= +6%
+  qqq_dump_ret: -0.06        # 下跌：QQQ 21 日 <= -6%
+  qqq_chop_ret: 0.03         # 震荡：|21 日| < 3%
+  qqq_chop_width: 0.08       # 震荡还须 QQQ 布林带宽 < 8%
+  qqq_chop_no_new: false     # 震荡允许新开
+  qqq_chop_max_hold: 4       # 震荡持仓上限仍为 4
+  qqq_rally_short_top_n: 3   # 大涨：合并观察池里空头最多 3 个（不禁止）
+  qqq_rally_short_ma200_buffer: 0.04  # 大涨：新开空须在 MA200 下方至少 4%
+  qqq_dump_ma200_buffer: 0.04  # 下跌：新开多须离开 MA200 至少 4%
 
 backtest:
   start: "2018-01-01"
