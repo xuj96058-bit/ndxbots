@@ -4,6 +4,12 @@ import numpy as np
 import pandas as pd
 
 from ndxbots.config import Settings
+from ndxbots.strategy.qqq_pool import (
+    assign_combined_pool,
+    apply_qqq_regime_gates,
+    classify_qqq_regime,
+    max_hold_map,
+)
 
 
 def _cs_rank(series: pd.Series) -> pd.Series:
@@ -120,11 +126,13 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
       < -strong         强空，允许新开空
     MACD / RSI 只卡新开；带宽卡整票。开关默认关。
     """
+    qqq_regime = classify_qqq_regime(factors, settings)
     df = factors.copy()
     df["date"] = pd.to_datetime(df["date"]).dt.normalize()
     bench = settings.benchmark
     df = df[df["code"] != bench].copy()
     df = df.sort_values(["code", "date"]).reset_index(drop=True)
+    df["qqq_regime"] = df["date"].map(qqq_regime)
 
     missing = [c for c in settings.strategy_factors if c not in df.columns]
     if missing:
@@ -254,27 +262,13 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
             & (~new_short | rsi_short_ok)
         )
 
-    df["eligible"] = long_eligible | short_eligible
-    df["pool_rank"] = pd.NA
-    df["short_pool_rank"] = pd.NA
-
-    long_picked = df.loc[long_eligible].copy()
-    if not long_picked.empty:
-        long_picked["pool_rank"] = long_picked.groupby("date")["long_score"].rank(
-            method="first", ascending=False
-        )
-        df.loc[long_picked.index, "pool_rank"] = long_picked["pool_rank"]
-
-    short_picked = df.loc[short_eligible].copy()
-    if not short_picked.empty:
-        short_picked["short_pool_rank"] = short_picked.groupby("date")[
-            "short_score"
-        ].rank(method="first", ascending=False)
-        df.loc[short_picked.index, "short_pool_rank"] = short_picked["short_pool_rank"]
-
-    df["in_pool_long"] = df["pool_rank"].le(settings.strategy_top_n).fillna(False)
-    df["in_pool_short"] = df["short_pool_rank"].le(settings.strategy_top_n).fillna(False)
-    df = apply_holding_hysteresis(df, settings)
+    long_eligible, short_eligible = apply_qqq_regime_gates(
+        df, settings, new_long, new_short, long_eligible, short_eligible
+    )
+    df = assign_combined_pool(df, settings, long_eligible, short_eligible)
+    df = apply_holding_hysteresis(
+        df, settings, max_hold_by_date=max_hold_map(qqq_regime, settings)
+    )
     df["in_pool"] = df["in_pool_long"] | df["in_pool_short"]
     df["in_hold"] = df["in_hold_long"] | df["in_hold_short"]
     return df
@@ -294,7 +288,11 @@ def _abs_strength_row(df: pd.DataFrame, i, factor_cols: tuple[str, ...]) -> floa
     return abs(float(score)) if pd.notna(score) else 0.0
 
 
-def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+def apply_holding_hysteresis(
+    df: pd.DataFrame,
+    settings: Settings,
+    max_hold_by_date: dict | None = None,
+) -> pd.DataFrame:
     """全场最多 max_hold 档。多空用打分因子绝对值抢同一组坑。
 
     旧仓未满 min_hold_days，或该侧排名仍 <= keep_rank，优先留。
@@ -316,6 +314,9 @@ def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFra
     prev: dict[str, tuple[str, int]] = {}
 
     for day in dates:
+        cap = max_hold
+        if max_hold_by_date is not None:
+            cap = int(max_hold_by_date.get(day, max_hold))
         idx = df.index[df["date"].eq(day)]
         meta: dict[str, dict] = {}
         for i in idx:
@@ -342,10 +343,10 @@ def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFra
             if held < min_days or still_ranked:
                 kept[code] = (side, held)
 
-        if len(kept) > max_hold:
+        if len(kept) > cap:
             locked = {c: v for c, v in kept.items() if v[1] < min_days}
             extra = {c: v for c, v in kept.items() if c not in locked}
-            room = max(0, max_hold - len(locked))
+            room = max(0, cap - len(locked))
             ranked = sorted(
                 extra.items(),
                 key=lambda kv: meta[kv[0]]["strength"],
@@ -355,7 +356,7 @@ def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFra
             for code, val in ranked[:room]:
                 kept[code] = val
 
-        if len(kept) < max_hold:
+        if len(kept) < cap:
             cands = []
             for code, info in meta.items():
                 if code in kept:
@@ -369,7 +370,7 @@ def apply_holding_hysteresis(df: pd.DataFrame, settings: Settings) -> pd.DataFra
                     cands.append((info["strength"], "short", code))
             cands.sort(key=lambda x: (-x[0], x[1], x[2]))
             for _, side, code in cands:
-                if len(kept) >= max_hold:
+                if len(kept) >= cap:
                     break
                 if code in kept:
                     continue
@@ -400,6 +401,7 @@ def latest_pool(scored: pd.DataFrame) -> pd.DataFrame:
             "date",
             "code",
             "side",
+            "qqq_regime",
             "slope_zone",
             "regime_side",
             "score",
