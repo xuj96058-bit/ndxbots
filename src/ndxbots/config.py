@@ -105,6 +105,17 @@ class Settings:
     bb_width_gate: bool
     bb_width_min: float | None
     bb_width_pct_min: float
+    qqq_regime_gate: bool
+    qqq_ret_col: str
+    qqq_rally_ret: float
+    qqq_dump_ret: float
+    qqq_chop_ret: float
+    qqq_chop_width: float
+    qqq_chop_no_new: bool
+    qqq_chop_max_hold: int
+    qqq_rally_short_top_n: int
+    qqq_rally_short_ma200_buffer: float
+    qqq_dump_ma200_buffer: float
 
     # ---------- backtest ----------
     bt_start: str
@@ -174,6 +185,17 @@ def load_settings() -> Settings:
         bb_width_gate=bool(strategy.get("bb_width_gate", False)),
         bb_width_min=_optional_float(strategy.get("bb_width_min")),
         bb_width_pct_min=float(strategy.get("bb_width_pct_min", 0.20)),
+        qqq_regime_gate=bool(strategy.get("qqq_regime_gate", False)),
+        qqq_ret_col=str(strategy.get("qqq_ret_col", "ret_21")),
+        qqq_rally_ret=float(strategy.get("qqq_rally_ret", 0.06)),
+        qqq_dump_ret=float(strategy.get("qqq_dump_ret", -0.06)),
+        qqq_chop_ret=float(strategy.get("qqq_chop_ret", 0.03)),
+        qqq_chop_width=float(strategy.get("qqq_chop_width", 0.08)),
+        qqq_chop_no_new=bool(strategy.get("qqq_chop_no_new", True)),
+        qqq_chop_max_hold=int(strategy.get("qqq_chop_max_hold", 2)),
+        qqq_rally_short_top_n=int(strategy.get("qqq_rally_short_top_n", 3)),
+        qqq_rally_short_ma200_buffer=float(strategy.get("qqq_rally_short_ma200_buffer", 0.04)),
+        qqq_dump_ma200_buffer=float(strategy.get("qqq_dump_ma200_buffer", 0.04)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
