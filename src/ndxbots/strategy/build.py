@@ -58,12 +58,15 @@ def run_build() -> None:
     print(f"执行池已写 {exec_path}  行数={len(exec_pool)}")
     print(
         f"规则: 因子={list(settings.strategy_factors)}  "
-        f"TopN={settings.strategy_top_n}  每侧最多持仓={settings.max_hold}  "
+        f"TopN={settings.strategy_top_n}  全场持仓上限={settings.max_hold}  "
         f"MA200过滤={settings.require_above_ma200}  "
         f"允许做空={settings.allow_short}  "
         f"MACD闸={settings.macd_gate}  RSI闸={settings.rsi_gate}  "
-        f"带宽闸={settings.bb_width_gate}"
+        f"带宽闸={settings.bb_width_gate}  "
+        f"QQQ制度闸={settings.qqq_regime_gate}"
     )
+    if settings.qqq_regime_gate and "qqq_regime" in pool.columns and not pool.empty:
+        print(f"今日 QQQ 状态: {pool['qqq_regime'].iloc[0]}")
     if watch.empty:
         print("今日观察池为空。")
         return
