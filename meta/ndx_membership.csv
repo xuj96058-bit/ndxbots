@@ -1,0 +1,314 @@
+code,start,end,name
+US.AAL,2014-12-22,2020-04-20,American Airlines Group
+US.AAPL,2006-01-01,,Apple Inc.
+US.ABNB,2021-12-20,,"Airbnb, Inc. Class A"
+US.ADBE,2006-01-01,,Adobe Inc.
+US.ADI,2012-12-24,,"Analog Devices, Inc."
+US.ADP,2008-12-22,,"Automatic Data Processing, Inc."
+US.ADSK,2006-01-01,,"Autodesk, Inc."
+US.AEOS,2006-01-01,2007-03-08,American Eagle Outfitters
+US.AEP,2020-12-21,,"American Electric Power Company, Inc."
+US.AKAM,2006-01-01,2009-12-21,Akamai Technologies
+US.AKAM,2010-12-20,2017-12-18,Akamai Technologies
+US.ALAB,2026-06-22,,"Astera Labs, Inc."
+US.ALGN,2017-10-23,2023-12-18,Align Technology
+US.ALNY,2025-12-22,,"Alnylam Pharmaceuticals, Inc."
+US.ALTR,2006-01-01,2015-10-07,Altera
+US.ALXN,2011-04-04,2021-07-21,Alexion Pharmaceuticals
+US.AMAT,2006-01-01,,"Applied Materials, Inc."
+US.AMD,2018-12-24,,"Advanced Micro Devices, Inc."
+US.AMGN,2006-01-01,,Amgen Inc.
+US.AMLN,2006-01-01,2008-12-22,Amylin Pharmaceuticals
+US.AMZN,2006-01-01,,"Amazon.com, Inc."
+US.ANSS,2019-12-23,2025-07-17,Ansys
+US.APCC,2006-01-01,2007-02-14,American Power Conversion
+US.APOL,2006-01-01,2012-12-24,Apollo Group
+US.APP,2024-11-18,,Applovin Corporation Class A
+US.ARM,2024-06-24,,Arm Holdings plc American Depositary Shares
+US.ASML,2017-12-18,,ASML Holding N.V. New York Registry Shares
+US.ATVI,2006-01-01,2023-07-17,Activision Blizzard
+US.AVGO,2011-12-19,,Broadcom Inc.
+US.AXON,2024-12-23,,"Axon Enterprise, Inc."
+US.AZN,2022-02-22,2026-01-20,AstraZeneca
+US.BATRA,2016-04-18,2016-06-20,Liberty Media
+US.BATRK,2016-04-18,2016-06-20,Liberty Media
+US.BBBY,2006-01-01,2016-12-19,Bed Bath & Beyond
+US.BEAS,2006-01-01,2008-04-30,BEA Systems
+US.BIDU,2007-12-04,2022-12-19,"Baidu.com, Inc."
+US.BIIB,2006-01-01,2025-12-22,Biogen
+US.BKNG,2009-10-29,,Booking Holdings Inc.
+US.BKR,2022-12-19,,Baker Hughes Company Class A
+US.BMC,2009-12-21,2013-07-25,BMC Software
+US.BMET,2006-01-01,2007-07-12,Biomet
+US.BMRN,2015-07-27,2020-12-21,BioMarin Pharmaceutical
+US.BRCM,2006-01-01,2015-11-11,Broadcom Corporation
+US.CA,2008-05-19,2018-11-05,CA Technologies
+US.CCEP,2023-12-18,,Coca-Cola Europacific Partners plc Ordinary Shares
+US.CDNS,2006-01-01,2008-12-22,Cadence Design Systems
+US.CDNS,2017-12-18,,"Cadence Design Systems, Inc."
+US.CDW,2019-12-23,2021-12-20,CDW
+US.CDW,2023-12-18,2025-12-22,CDW
+US.CDWC,2006-01-01,2007-10-08,CDW Corporation
+US.CEG,2022-02-02,,Constellation Energy Corporation
+US.CELG,2006-01-01,2019-11-21,Celgene
+US.CEPH,2007-06-01,2011-07-15,Cephalon
+US.CERN,2009-07-17,2021-12-20,Cerner
+US.CHKP,2006-01-01,2021-12-20,Check Point
+US.CHRW,2006-01-01,2015-12-21,C. H. Robinson Worldwide
+US.CHTR,2013-07-25,2026-06-22,"Charter Communications, Inc. Class A New"
+US.CKFR,2006-01-01,2007-12-04,CheckFree Corporation
+US.CMCSA,2006-01-01,,Comcast Corporation Class A
+US.CMCSK,2014-12-22,2015-12-15,Comcast Corporation Class A
+US.CMVT,2006-01-01,2007-02-01,Comverse Technology
+US.COST,2006-01-01,,Costco Wholesale Corporation
+US.CPRT,2019-12-23,,"Copart, Inc. (DE)"
+US.CRWD,2021-08-26,,"CrowdStrike Holdings, Inc. Class A"
+US.CRWV,2026-06-22,,"CoreWeave, Inc."
+US.CSCO,2006-01-01,,"Cisco Systems, Inc (DE)"
+US.CSGP,2019-12-23,2020-07-20,CoStar Group
+US.CSGP,2022-12-19,2026-05-18,"CoStar Group, Inc."
+US.CSX,2016-02-16,,CSX Corporation
+US.CTAS,2006-01-01,2010-12-20,Cintas
+US.CTAS,2016-12-19,,Cintas Corporation
+US.CTRX,2012-12-24,2015-07-24,Catamaran Corporation
+US.CTSH,2006-01-01,2026-06-22,Cognizant Technology Solutions Corporation Class A
+US.CTXS,2006-01-01,2020-12-21,Citrix Systems
+US.DASH,2023-12-18,,"DoorDash, Inc. Class A"
+US.DDOG,2021-12-20,,"Datadog, Inc. Class A"
+US.DELL,2006-01-01,2013-10-29,Dell
+US.DISCA,2006-01-01,2008-12-22,Discovery Communications Class A
+US.DISCA,2012-12-24,2017-12-18,Discovery Communications
+US.DISCK,2006-01-01,2017-12-18,Discovery Communications Series C
+US.DISH,2006-01-01,2010-12-20,Dish Network
+US.DISH,2013-12-23,2018-07-23,DISH Network Corporation
+US.DLTR,2010-12-20,2024-11-18,Dollar Tree
+US.DOCU,2020-06-22,2022-12-19,DocuSign
+US.DTV,2008-04-30,2015-07-24,DirecTV
+US.DXCM,2020-04-20,,"DexCom, Inc."
+US.EA,2006-01-01,2012-12-24,Electronic Arts
+US.EA,2014-12-22,2026-08-04,Electronic Arts Inc.
+US.EBAY,2006-01-01,2023-12-18,EBay
+US.ENDP,2015-12-21,2016-07-18,Endo International
+US.ENPH,2022-11-21,2023-12-18,Enphase Energy
+US.EQIX,2012-12-24,2015-03-23,Equinix
+US.ERIC,2006-01-01,2007-12-24,LM Ericsson
+US.ESRX,2006-01-01,2018-12-24,Express Scripts
+US.EXC,2019-11-21,,Exelon Corporation
+US.EXPD,2006-01-01,2015-12-21,Expeditors International
+US.EXPE,2006-01-01,2014-12-22,Expedia Group
+US.EXPE,2015-12-21,2020-12-21,Expedia Group
+US.FANG,2022-12-19,,"Diamondback Energy, Inc."
+US.FAST,2006-01-01,,Fastenal Company
+US.FER,2025-12-22,,Ferrovial SE Ordinary Shares
+US.FFIV,2010-12-20,2014-12-22,F5 Networks
+US.FISV,2006-01-01,2023-06-07,Fiserv
+US.FLEX,2006-01-01,2012-12-24,Flextronics
+US.FLIR,2008-07-21,2011-12-19,FLIR Systems
+US.FMCN,2007-12-24,2009-01-20,Focus Media
+US.FOSL,2011-12-19,2013-12-23,Fossil Group
+US.FOX,2014-12-22,2021-12-20,"Twenty-First Century Fox, Inc. Class B"
+US.FOXA,2019-03-19,2021-12-20,Fox Corporation Class A
+US.FSLR,2008-12-22,2012-04-23,First Solar
+US.FTNT,2021-12-20,,"Fortinet, Inc."
+US.FWLT,2007-07-12,2010-12-20,Foster Wheeler
+US.GEHC,2023-06-07,,GE HealthCare Technologies Inc.
+US.GENZ,2006-01-01,2011-04-04,Genzyme
+US.GFS,2022-12-19,2025-12-22,GlobalFoundries
+US.GILD,2006-01-01,,"Gilead Sciences, Inc."
+US.GMCR,2011-05-27,2012-12-24,Green Mountain Coffee Roasters
+US.GMCR,2013-08-22,2015-12-21,Green Mountain Coffee Roasters
+US.GOLD,2011-12-19,2013-11-18,Randgold Resources
+US.GOOG,2014-04-03,,Alphabet Inc. Class C Capital Stock
+US.GOOGL,2006-01-01,,Alphabet Inc. Class A
+US.GRMN,2006-01-01,2015-12-21,Garmin
+US.HAS,2016-12-19,2019-12-23,Hasbro
+US.HOLX,2007-12-24,2010-12-20,Hologic
+US.HOLX,2016-12-19,2018-12-24,Hologic
+US.HON,2021-07-21,,Honeywell Technologies Inc.
+US.HONA,2026-06-29,,Honeywell Aerospace
+US.HSIC,2006-01-01,2019-12-23,Henry Schein
+US.IACI,2006-01-01,2009-12-21,IAC/InterActiveCorp
+US.IDXX,2017-03-20,,"IDEXX Laboratories, Inc."
+US.ILMN,2008-12-22,2011-12-19,Illumina
+US.ILMN,2013-12-23,2024-12-23,Illumina
+US.INCY,2015-10-07,2021-12-20,Incyte
+US.INFY,2006-01-01,2012-12-12,Infosys
+US.INSM,2025-12-22,2026-06-22,Insmed Incorporated
+US.INTC,2006-01-01,,Intel Corporation
+US.INTU,2006-01-01,,Intuit Inc.
+US.ISRG,2006-01-01,,"Intuitive Surgical, Inc."
+US.JAVA,2006-01-01,2009-07-17,Sun Microsystems
+US.JBHT,2008-12-22,2010-12-20,J. B. Hunt
+US.JBHT,2017-02-07,2019-12-23,J.B. Hunt
+US.JD,2015-07-29,2023-12-18,JD.com
+US.JNPR,2006-01-01,2009-10-29,Juniper Networks
+US.JOYG,2006-01-01,2011-12-06,Joy Global
+US.KDP,2020-10-19,,Keurig Dr Pepper Inc.
+US.KHC,2015-07-02,,The Kraft Heinz Company
+US.KLAC,2006-01-01,2016-02-16,KLA-Tencor
+US.KLAC,2016-12-19,,KLA Corporation
+US.KRFT,2013-03-18,2015-07-02,Kraft Foods
+US.LAMR,2006-01-01,2008-12-22,Lamar Advertising Company
+US.LBTYA,2006-01-01,2009-12-21,Liberty Global Class A
+US.LBTYA,2012-12-24,2020-12-21,Liberty Global
+US.LBTYK,2014-12-22,2020-12-21,Liberty Global PLC Class C
+US.LCID,2021-12-20,2023-12-18,Lucid Group
+US.LEAP,2007-10-08,2008-12-22,Leap Wireless International
+US.LIFE,2008-12-22,2013-08-22,Life Technologies
+US.LILA,2015-07-02,2015-12-21,Liberty Latin America Class A
+US.LILAK,2015-07-02,2015-12-21,Liberty Latin America Class C
+US.LIN,2024-03-18,,Linde plc Ordinary Shares
+US.LITE,2026-05-18,,Lumentum Holdings Inc.
+US.LLTC,2006-01-01,2016-10-19,Linear Technology
+US.LMCA,2012-12-24,2013-01-15,Liberty Media
+US.LMCA,2013-06-05,2016-06-20,Liberty Media
+US.LMCK,2006-01-01,2016-06-20,Liberty Media
+US.LOGI,2006-01-01,2010-12-20,Logitech
+US.LRCX,2006-01-01,2012-12-24,Lam Research
+US.LRCX,2014-12-22,,Lam Research Corporation
+US.LULU,2018-12-24,2025-12-22,lululemon Athletica
+US.LVLT,2006-01-01,2008-12-22,Level 3 Communications
+US.MAR,2013-11-18,,Marriott International Class A
+US.MAT,2009-12-21,2017-10-23,Mattel
+US.MCHP,2006-01-01,2013-12-23,Microchip Technology
+US.MCHP,2016-07-18,,Microchip Technology Incorporated
+US.MDB,2023-12-18,2025-05-19,MongoDB
+US.MDLZ,2006-01-01,,"Mondelez International, Inc. Class A"
+US.MEDI,2006-01-01,2007-06-01,MedImmune
+US.MELI,2017-06-19,,"MercadoLibre, Inc."
+US.META,2012-12-12,,"Meta Platforms, Inc. Class A"
+US.MICC,2006-01-01,2011-05-27,Millicom International Cellular
+US.MNST,2006-01-01,2008-11-10,Monster Worldwide
+US.MNST,2007-12-24,2009-12-21,Monster Beverage Corporation
+US.MNST,2011-12-19,,Monster Beverage Corporation
+US.MPWR,2025-12-22,,"Monolithic Power Systems, Inc."
+US.MRNA,2020-07-20,2024-12-23,Moderna
+US.MRVL,2006-01-01,2012-12-24,Marvell Technology Group
+US.MRVL,2020-12-21,,"Marvell Technology, Inc."
+US.MSFT,2006-01-01,,Microsoft Corporation
+US.MSTR,2024-12-23,,Strategy Inc Class A
+US.MTCH,2020-12-21,2022-12-19,Match Group
+US.MU,2010-12-20,,"Micron Technology, Inc."
+US.MXIM,2008-12-22,2014-12-22,Maxim Integrated Products
+US.MXIM,2015-12-21,2021-08-26,Maxim Integrated Products
+US.MYL,2009-12-21,2019-12-23,Mylan
+US.NBIS,2026-06-22,,Nebius Group N.V.
+US.NCLH,2015-12-21,2017-12-18,Norwegian Cruise Line
+US.NDOI,2006-01-01,2016-07-18,Endo International
+US.NFLX,2010-12-20,2012-12-24,Netflix
+US.NFLX,2013-06-06,,"Netflix, Inc."
+US.NIHD,2006-01-01,2011-12-19,NII Holdings
+US.NLOK,2006-01-01,2019-12-23,NortonLifeLock
+US.NLTI,2006-01-01,2007-08-27,NTL Incorporated
+US.NTAP,2006-01-01,2016-12-19,NetApp
+US.NTAP,2018-12-24,2020-08-24,NetApp
+US.NTES,2016-03-16,2022-12-19,NetEase
+US.NUAN,2011-12-19,2013-12-23,Nuance Communications
+US.NVDA,2006-01-01,,NVIDIA Corporation
+US.NWSA,2009-01-20,2013-06-28,News Corporation Class A
+US.NXPI,2013-12-23,2017-02-07,NXP Semiconductors
+US.NXPI,2018-11-05,,NXP Semiconductors N.V
+US.ODFL,2022-01-24,,"Old Dominion Freight Line, Inc."
+US.OKTA,2020-12-21,2022-11-21,Okta
+US.ON,2023-06-20,2025-12-22,Onsemi
+US.ORCL,2006-01-01,2013-07-15,Oracle
+US.ORLY,2008-12-22,,"O'Reilly Automotive, Inc."
+US.PANW,2021-12-20,,"Palo Alto Networks, Inc."
+US.PAYX,2006-01-01,,"Paychex, Inc."
+US.PCAR,2006-01-01,,PACCAR Inc.
+US.PDCO,2006-01-01,2010-12-20,Patterson Companies
+US.PDD,2020-08-24,,PDD Holdings Inc. American Depositary Shares
+US.PEP,2018-07-23,,"PepsiCo, Inc."
+US.PETM,2006-01-01,2008-12-22,PetSmart
+US.PLTR,2024-12-23,,Palantir Technologies Inc. Class A
+US.PPDI,2008-12-22,2009-12-21,Pharmaceutical Product Development
+US.PRGO,2011-12-06,2013-06-06,Perrigo
+US.PTEN,2006-01-01,2007-12-24,Patterson-UTI Energy
+US.PTON,2020-12-21,2022-01-24,Peloton
+US.PYPL,2015-11-11,,"PayPal Holdings, Inc."
+US.QCOM,2006-01-01,,QUALCOMM Incorporated
+US.QGEN,2009-12-21,2011-12-19,Qiagen
+US.QRTEA,2006-01-01,2018-12-24,Qurate Retail
+US.REGN,2012-12-24,,"Regeneron Pharmaceuticals, Inc."
+US.RIMM,2006-01-01,2012-12-24,Research in Motion
+US.RIVN,2022-12-19,2023-06-20,Rivian Automotive
+US.RKLB,2026-06-22,,Rocket Lab Corporation
+US.ROP,2023-12-18,,"Roper Technologies, Inc."
+US.ROST,2006-01-01,2007-12-24,Ross Stores
+US.ROST,2008-12-22,,"Ross Stores, Inc."
+US.RYAAY,2007-02-14,2009-12-21,Ryanair
+US.SBAC,2012-12-24,2017-03-20,SBA Communications
+US.SBUX,2006-01-01,,Starbucks Corporation
+US.SEPR,2006-01-01,2007-12-24,Sepracor
+US.SGEN,2019-12-23,2023-12-14,Seattle Genetics
+US.SHLD,2006-01-01,2013-12-23,Sears Holdings
+US.SHOP,2025-05-19,,Shopify Inc. Class A Subordinate Voting Shares
+US.SHPG,2016-10-19,2018-12-24,Shire PLC
+US.SIAL,2006-01-01,2015-07-31,Sigma-Aldrich
+US.SIRI,2006-01-01,2008-12-22,Sirius XM Radio
+US.SIRI,2011-07-15,2024-06-24,Sirius XM Radio
+US.SMCI,2024-07-22,2024-12-23,Supermicro
+US.SNDK,2006-01-01,2008-12-22,SanDisk
+US.SNDK,2009-12-21,2016-03-16,SanDisk
+US.SNDK,2026-04-20,,Sandisk Corporation
+US.SNPS,2017-12-18,,"Synopsys, Inc."
+US.SOLS,2025-10-30,2025-11-06,Solstice Advanced Materials
+US.SPCX,2026-07-07,,Space Exploration Technologies Corporation
+US.SPLK,2019-12-23,2022-12-19,Splunk
+US.SPLK,2023-12-18,2024-03-18,Splunk
+US.SPLS,2006-01-01,2015-12-21,Staples
+US.SRCL,2007-12-24,2016-12-19,Stericycle
+US.STLD,2007-12-24,2009-12-21,Steel Dynamics
+US.STRZA,2013-01-15,2013-03-18,Starz
+US.STX,2008-11-10,2018-12-24,Seagate Technology
+US.STX,2025-12-22,,Seagate Technology Holdings PLC Ordinary Shares (Ireland)
+US.SWKS,2015-08-03,2022-12-19,Skyworks Solutions
+US.TCFCA,2006-01-01,2019-03-19,21st Century Fox Class A
+US.TCFCB,2006-01-01,2019-03-19,21st Century Fox Class B
+US.TCOM,2006-01-01,2021-12-20,Trip.com
+US.TEAM,2020-12-21,2026-04-20,Atlassian
+US.TER,2026-06-22,,"Teradyne, Inc."
+US.TEVA,2006-01-01,2012-05-30,Teva Pharmaceutical Industries
+US.TLAB,2006-01-01,2008-05-19,Tellabs
+US.TMUS,2015-12-21,,"T-Mobile US, Inc."
+US.TRI,2025-07-28,,Thomson Reuters Corporation Common Shares
+US.TRIP,2013-12-23,2017-04-24,TripAdvisor
+US.TSCO,2013-12-23,2017-12-18,Tractor Supply Company
+US.TSLA,2013-07-15,,"Tesla, Inc."
+US.TTD,2023-07-17,2025-12-22,The Trade Desk
+US.TTWO,2017-12-18,2020-12-21,Take-Two Interactive
+US.TTWO,2023-12-14,,"Take-Two Interactive Software, Inc."
+US.TXN,2012-04-23,,Texas Instruments Incorporated
+US.UAL,2018-12-24,2020-06-22,United Continental Holdings
+US.UAUA,2007-03-08,2008-07-21,UAL Corporation
+US.ULTA,2015-12-21,2020-12-21,Ulta Beauty
+US.URBN,2008-12-22,2011-12-19,Urban Outfitters
+US.VIAB,2012-05-30,2017-12-18,Viacom
+US.VIP,2013-10-29,2015-12-21,VimpelCom
+US.VMED,2007-08-27,2008-12-22,Virgin Media
+US.VMED,2009-12-21,2013-06-05,Virgin Media
+US.VOD,2009-12-21,2018-12-24,Vodafone
+US.VRSK,2012-12-24,2026-06-22,"Verisk Analytics, Inc."
+US.VRSN,2006-01-01,2012-12-24,VeriSign
+US.VRSN,2018-12-24,2022-12-19,Verisign
+US.VRTX,2006-01-01,,Vertex Pharmaceuticals Incorporated
+US.VSNT,2026-01-05,2026-01-09,Versant
+US.WBA,2015-03-23,2024-07-22,Walgreens Boots Alliance
+US.WBD,2022-12-19,,"Warner Bros. Discovery, Inc. Series A"
+US.WCRX,2008-12-22,2012-12-24,Warner Chilcott
+US.WDAY,2017-12-18,,"Workday, Inc. Class A"
+US.WDC,2012-12-24,2020-10-19,Western Digital
+US.WDC,2025-12-22,,Western Digital Corporation
+US.WFM,2006-01-01,2016-12-19,Whole Foods Market
+US.WMT,2026-01-20,,Walmart Inc.
+US.WTW,2006-01-01,2020-04-30,Willis Towers Watson
+US.WYNN,2006-01-01,2015-12-21,Wynn Resorts
+US.WYNN,2017-04-24,2019-12-23,Wynn Resorts
+US.XEL,2018-11-19,,Xcel Energy Inc.
+US.XLNX,2006-01-01,2022-02-22,Xilinx
+US.XMSR,2006-01-01,2007-12-24,XM Satellite Radio
+US.XRAY,2006-01-01,2013-12-23,Dentsply
+US.XRAY,2016-06-20,2018-11-19,Dentsply Sirona
+US.YHOO,2006-01-01,2017-06-19,Yahoo! Inc.
+US.ZM,2020-04-30,2023-12-18,Zoom Video Communications
+US.ZS,2021-12-20,2026-06-22,"Zscaler, Inc."
