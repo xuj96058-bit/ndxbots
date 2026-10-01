@@ -1,6 +1,6 @@
 # ndxbots
 
-納斯達克 100 本機量化平台：從富途拉日 K，算因子，生成觀察池，再和 QQQ 做日線回測。
+納斯達克 100 本機量化平台：從富途拉日 K，算因子，生成觀察池，再和 QQQ 做日線回測。另有一層市場狀態：情緒與擁擠度，只作風控，不作買賣信號。
 
 行情和回測結果只存在你電腦的 `data/` 裡，**不要上傳到 GitHub**。
 
@@ -47,7 +47,25 @@ python -m ndxbots.data.ingest
 python -m ndxbots.factors.compute
 ```
 
-### 4. 生成觀察池
+### 4. 情緒與擁擠度
+
+```powershell
+python -m ndxbots.regime
+python -m ndxbots.regime --refresh-leverage
+```
+
+`--refresh-leverage` 會從 FINRA 官方月表更新融資盤，寫到 `data/meta/finra_margin_debt.csv`。不刷新時用倉庫裡的 `meta/finra_margin_debt.csv`（截至 2026-08）。
+
+輸出在 `data/regime/daily.parquet`。這是狀態變數：
+
+- 情緒 > 0.8：過熱，不代表馬上跌
+- 情緒 < 0.2：過冷，不代表馬上漲
+- 情緒和擁擠都 > 0.8：雙重極端，收緊風控、不追高
+- QQQ 創 252 日新高但情緒未過熱：內部背離
+
+成分要 point-in-time，把 `meta/ndx_membership.example.csv` 抄成 `meta/ndx_membership.csv`，欄位是 `code,start,end`。沒有這份表時，用當前名單並標成 `static_snapshot`，歷史廣度會有成分偏差。
+
+### 5. 生成觀察池
 
 ```powershell
 python -m ndxbots.strategy.build
@@ -62,7 +80,7 @@ python -m ndxbots.strategy.build
 - RSI 閘只卡新開：多 ≤75、空 ≥25；布林帶寬截面分位低於 20% 不做
 - QQQ 市場狀態：震盪可新開、持倉上限仍為 4；大漲空頭更嚴但不禁止（合併池最多 3 空，新開空須低於 MA200 至少 4%）；跌勢新開多須高於 MA200 至少 4%
 
-### 5. 回測（對齊 QQQ）
+### 6. 回測（對齊 QQQ）
 
 ```powershell
 python -m ndxbots.backtest

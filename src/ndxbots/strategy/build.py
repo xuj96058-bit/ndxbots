@@ -7,6 +7,7 @@ import pandas as pd
 
 from ndxbots.config import load_settings
 from ndxbots.factors.compute import factor_path
+from ndxbots.regime.compute import regime_path
 from ndxbots.strategy.scores import build_score_table, latest_pool
 
 
@@ -27,6 +28,28 @@ def _print_side(watch: pd.DataFrame, side: str, max_hold: int) -> None:
     print(show.to_string(index=False))
     hold = part[part["in_hold"]]
     print(f"回测本侧会持有前 {len(hold)} 档（max_hold={max_hold}）")
+
+
+def _print_regime(settings) -> None:
+    path = regime_path(settings)
+    if not path.exists():
+        print("還沒有情緒/擁擠度。可先跑 python -m ndxbots.regime")
+        return
+    table = pd.read_parquet(path)
+    if table.empty:
+        return
+    row = table.iloc[-1]
+    sentiment = row.get("sentiment")
+    crowding = row.get("crowding")
+    sent_txt = f"{sentiment:.3f}" if pd.notna(sentiment) else "nan"
+    crowd_txt = f"{crowding:.3f}" if pd.notna(crowding) else "nan"
+    print(
+        f"市場狀態 {pd.Timestamp(row['date']).date()}: {row.get('state')}  "
+        f"情緒={sent_txt}  擁擠={crowd_txt}  "
+        f"成分={row.get('membership_source')}"
+    )
+    if bool(row.get("qqq_sentiment_divergence")):
+        print("背離: QQQ 在 252 日高位，情緒沒有同步過熱。")
 
 
 def run_build() -> None:
@@ -67,6 +90,7 @@ def run_build() -> None:
     )
     if settings.qqq_regime_gate and "qqq_regime" in pool.columns and not pool.empty:
         print(f"今日 QQQ 状态: {pool['qqq_regime'].iloc[0]}")
+    _print_regime(settings)
     if watch.empty:
         print("今日观察池为空。")
         return

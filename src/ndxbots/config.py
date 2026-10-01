@@ -117,6 +117,22 @@ class Settings:
     qqq_rally_short_ma200_buffer: float
     qqq_dump_ma200_buffer: float
 
+    # ---------- regime：情緒 / 擁擠度，狀態變數，不是買賣信號 ----------
+    regime_window: int
+    regime_min_periods: int
+    regime_ma_window: int
+    regime_nhnl_window: int
+    regime_rsi_window: int
+    regime_ew_window: int
+    regime_top_amount: int
+    regime_min_names: int
+    regime_breadth_weight: float
+    regime_leverage_weight: float
+    regime_hot: float
+    regime_cold: float
+    regime_split: float
+    regime_leverage_lag_days: int
+
     # ---------- backtest ----------
     bt_start: str
     bt_end: str | None
@@ -131,6 +147,7 @@ def load_settings() -> Settings:
     data = raw.get("data", {}) or {}
     universe = raw.get("universe", {}) or {}
     strategy = raw.get("strategy", {}) or {}
+    regime = raw.get("regime", {}) or {}
     backtest = raw.get("backtest", {}) or {}
 
     data_root = Path(os.getenv("DATA_DIR", data.get("root", "data")))
@@ -196,6 +213,20 @@ def load_settings() -> Settings:
         qqq_rally_short_top_n=int(strategy.get("qqq_rally_short_top_n", 3)),
         qqq_rally_short_ma200_buffer=float(strategy.get("qqq_rally_short_ma200_buffer", 0.04)),
         qqq_dump_ma200_buffer=float(strategy.get("qqq_dump_ma200_buffer", 0.04)),
+        regime_window=int(regime.get("window", 252)),
+        regime_min_periods=int(regime.get("min_periods", 252)),
+        regime_ma_window=int(regime.get("ma_window", 50)),
+        regime_nhnl_window=int(regime.get("nhnl_window", 20)),
+        regime_rsi_window=int(regime.get("rsi_window", 14)),
+        regime_ew_window=int(regime.get("ew_window", 60)),
+        regime_top_amount=int(regime.get("top_amount", 10)),
+        regime_min_names=int(regime.get("min_names", 40)),
+        regime_breadth_weight=float(regime.get("breadth_weight", 0.7)),
+        regime_leverage_weight=float(regime.get("leverage_weight", 0.3)),
+        regime_hot=float(regime.get("hot", 0.8)),
+        regime_cold=float(regime.get("cold", 0.2)),
+        regime_split=float(regime.get("split", 0.5)),
+        regime_leverage_lag_days=int(regime.get("leverage_lag_days", 21)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),

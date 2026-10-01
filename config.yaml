@@ -66,6 +66,23 @@ strategy:
   qqq_rally_short_ma200_buffer: 0.04  # 大涨：新开空须在 MA200 下方至少 4%
   qqq_dump_ma200_buffer: 0.04  # 下跌：新开多须离开 MA200 至少 4%
 
+# 市場狀態，不是買賣信號。情緒過熱 / 擁擠極端只用於風控提示。
+regime:
+  window: 252                # 滾動分位窗口
+  min_periods: 252
+  ma_window: 50
+  nhnl_window: 20
+  rsi_window: 14             # Wilder RSI
+  ew_window: 60              # QQQ 相對等權超額
+  top_amount: 10             # 成交額前 10 佔比
+  min_names: 40              # 當天有效成分少於此數，廣度記缺
+  breadth_weight: 0.7
+  leverage_weight: 0.3
+  hot: 0.8                   # 過熱 / 雙重極端
+  cold: 0.2
+  split: 0.5                 # 狀態矩陣的高低分界
+  leverage_lag_days: 21      # 月末融資盤晚 21 個日曆日才進日頻，避免未來函數
+
 backtest:
   start: "2018-01-01"
   end: null
