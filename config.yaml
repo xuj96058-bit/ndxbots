@@ -82,6 +82,14 @@ regime:
   cold: 0.2
   split: 0.5                 # 狀態矩陣的高低分界
   leverage_lag_days: 21      # 月末融資盤晚 21 個日曆日才進日頻，避免未來函數
+  # 只縮已選好的倉，不改觀察池。情緒去掉上漲成交量，用 5 日均值。
+  use_gross_ladder: true
+  gross_smooth: 5            # 情緒、擁擠都用這麼多日的均值
+  gross_ladder_start: 0.35   # 5 日情緒低於等於這裡開始減倉
+  gross_ladder_step: 0.05    # 每再低 0.05，毛曝光減一檔
+  gross_step: 0.10           # 每一檔 10%
+  gross_floor: 0.60          # 階梯和雙熱的倉位地板
+  dual_hot: 0.80             # 5 日情緒和 5 日擁擠都達到這裡，直接收到地板
 
 backtest:
   start: "2018-01-01"

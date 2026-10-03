@@ -79,7 +79,9 @@ def yoy_on_trading_days(
     frame["yoy"] = frame["margin_debt"] / frame["margin_debt"].shift(12) - 1
     frame["available_on"] = frame["month_end"] + pd.Timedelta(days=int(lag_days))
     usable = frame.dropna(subset=["yoy"]).sort_values("available_on")
+    usable["available_on"] = pd.to_datetime(usable["available_on"]).astype("datetime64[ns]")
     days = pd.DataFrame({"date": pd.DatetimeIndex(trading_days)}).sort_values("date")
+    days["date"] = pd.to_datetime(days["date"]).astype("datetime64[ns]")
     merged = pd.merge_asof(
         days,
         usable[["available_on", "yoy"]],

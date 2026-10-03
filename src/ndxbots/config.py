@@ -132,6 +132,13 @@ class Settings:
     regime_cold: float
     regime_split: float
     regime_leverage_lag_days: int
+    use_gross_ladder: bool
+    gross_smooth: int
+    gross_ladder_start: float
+    gross_ladder_step: float
+    gross_step: float
+    gross_floor: float
+    dual_hot: float
 
     # ---------- backtest ----------
     bt_start: str
@@ -227,6 +234,13 @@ def load_settings() -> Settings:
         regime_cold=float(regime.get("cold", 0.2)),
         regime_split=float(regime.get("split", 0.5)),
         regime_leverage_lag_days=int(regime.get("leverage_lag_days", 21)),
+        use_gross_ladder=bool(regime.get("use_gross_ladder", False)),
+        gross_smooth=int(regime.get("gross_smooth", 5)),
+        gross_ladder_start=float(regime.get("gross_ladder_start", 0.35)),
+        gross_ladder_step=float(regime.get("gross_ladder_step", 0.05)),
+        gross_step=float(regime.get("gross_step", 0.10)),
+        gross_floor=float(regime.get("gross_floor", 0.60)),
+        dual_hot=float(regime.get("dual_hot", 0.80)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),

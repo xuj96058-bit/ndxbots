@@ -8,6 +8,7 @@ import pandas as pd
 from ndxbots.config import Settings
 from ndxbots.data.ingest import panel_path
 from ndxbots.factors.compute import factor_path
+from ndxbots.regime.exposure import gross_by_date, load_regime_table
 from ndxbots.strategy.scores import build_score_table
 
 
@@ -81,6 +82,13 @@ def run_backtest(
     if "side" not in hold.columns:
         hold["side"] = "long"
     hold["w"] = _signed_weights(hold)
+    hold["gross_target"] = 1.0
+    if settings.use_gross_ladder:
+        regime = load_regime_table(settings)
+        if regime is not None:
+            gross = gross_by_date(regime, settings)
+            hold["gross_target"] = hold["date"].map(gross).fillna(1.0)
+            hold["w"] = hold["w"] * hold["gross_target"]
     weights = hold.pivot(index="date", columns="code", values="w").sort_index()
     weights = weights.reindex(close.index).fillna(0.0)
 
@@ -97,6 +105,7 @@ def run_backtest(
     bench_ret = ret[bench].reindex(port_ret.index)
     equity = (1 + port_ret.fillna(0)).cumprod() * settings.initial_cash
     bench_eq = (1 + bench_ret.fillna(0)).cumprod() * settings.initial_cash
+    gross_target = hold.groupby("date")["gross_target"].first().reindex(port_ret.index)
 
     curve = pd.DataFrame(
         {
@@ -111,6 +120,7 @@ def run_backtest(
             "n_short": applied.lt(0).sum(axis=1).reindex(port_ret.index).to_numpy(),
             "net_exp": applied.sum(axis=1).reindex(port_ret.index).to_numpy(),
             "gross_exp": applied.abs().sum(axis=1).reindex(port_ret.index).to_numpy(),
+            "gross_target": gross_target.to_numpy(),
             "equity": equity.to_numpy(),
             "bench_equity": bench_eq.to_numpy(),
         }
@@ -181,6 +191,7 @@ def _summarize(curve: pd.DataFrame, settings: Settings) -> str:
         f"日均换手 {c['turnover'].mean()*100:.2f}%  日均持股 {c['n_hold'].mean():.2f}  空仓天占比 {cash_days*100:.1f}%",
         f"日均多 {c['n_long'].mean():.2f}  日均空 {c['n_short'].mean():.2f}  "
         f"日均净曝光 {c['net_exp'].mean():.2f}  日均毛曝光 {c['gross_exp'].mean():.2f}",
+        f"日均目标仓位 {c['gross_target'].mean():.2f}  阶梯减仓={settings.use_gross_ladder}",
         f"成本单边 {settings.cost_bps:.1f}bp  TopN观察 {settings.strategy_top_n}  全场持仓上限 {settings.max_hold}",
         f"最少持有 {getattr(settings, 'min_hold_days', 10)} 日  留仓名次 {getattr(settings, 'keep_rank', 8)}  "
         f"因子 {list(settings.strategy_factors)}  做空={settings.allow_short}",
