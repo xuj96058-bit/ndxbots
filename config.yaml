@@ -9,7 +9,6 @@ data:
   max_count: 1000
 
 universe:
-  # 优先用富途板块拉当前成分；失败则用内置兜底名单
   prefer_futu_plate: true
   plate_keywords:
     - 纳斯达克100
@@ -20,80 +19,84 @@ universe:
   benchmark: US.QQQ
   extra_codes:
     - US.QQQ
+    - US.HYG
+    - US.LQD
+    - US.TLT
 
-# 选股层：日线因子 → 观察池。执行层（15m / v7）只许盯池内股票。
-# 打分只用 factors；MACD / RSI / 带宽是闸门，默认关，打开才过滤。
 strategy:
   factors:
     - my_ma50_gap
     - my_struct_gap
-  invert: []                 # 负 IC 才把因子名放这里
-  top_n: 10                  # 多空合并观察池一共 10 档
-  require_above_ma200: true  # 新开多仍须在 MA200 上方；走平沿用旧多时允许留在缓冲带
-  allow_short: true          # true = 允许空头池
-  ma200_buffer: 0.015        # 新开仓：收盘须离开 MA200 至少 1.5%
-  slope_atr_strong: 1.5      # |Slope_ATR| 大于此为强趋势，允许新开
-  slope_atr_flat: 0.5        # |Slope_ATR| 小于此为走平（与强档互斥）
-  slope_pct_floor: 0.0025    # |s_20| 小于 0.25% 强制走平，避免微噪被 ATR 放大
-  slope_weak_no_new: true    # 弱趋势只留旧仓，不纳新票
-  flat_keep_prev: true       # 走平沿用昨天方向；false = 走平强制空仓
+  invert: []
+  top_n: 10
+  require_above_ma200: true
+  allow_short: true
+  ma200_buffer: 0.015
+  slope_atr_strong: 1.5
+  slope_atr_flat: 0.5
+  slope_pct_floor: 0.0025
+  slope_weak_no_new: true
+  flat_keep_prev: true
   space_col: my_dd_from_high_21
-  space_min: -0.12           # 多头：离 21 日高最多回撤 12%
-  space_max: -0.01           # 多头：至少离开高点 1%，避免追顶
+  space_min: -0.12
+  space_max: -0.01
   short_space_col: my_dist_from_low_21
-  short_space_min: 0.01      # 空头：至少离开 21 日低 1%，避免追水清盘
-  short_space_max: 0.12      # 空头：离低点反弹不超过 12%，避免结构已修复
+  short_space_min: 0.01
+  short_space_max: 0.12
   min_atr_pct: 0.010
-  max_hold: 4                # 全场合计最多 4 档，多空抢同一组名额
-  min_hold_days: 10          # 旧仓至少持有这么多交易日才允许因排名被踢
-  keep_rank: 8               # 没掉出该名次就继续留（仍受全场 4 档上限约束）
-  macd_gate: false           # 新开多要连续两根 hist_chg>0，新开空两根<0
-  rsi_gate: true             # 只卡新开，不踢旧仓
+  max_hold: 4
+  min_hold_days: 10
+  keep_rank: 8
+  macd_gate: false
+  rsi_gate: true
   rsi_long_max: 75
   rsi_short_min: 25
-  bb_width_gate: true        # 带宽太窄整票不做
-  bb_width_min: null         # 有数字就用绝对下限；否则用截面分位
-  bb_width_pct_min: 0.20     # 当天带宽秩分位低于此则剔除
+  bb_width_gate: true
+  bb_width_min: null
+  bb_width_pct_min: 0.20
   qqq_regime_gate: true
-  qqq_ret_col: ret_21        # 用 QQQ 近 21 日涨跌（因子表已有）
-  qqq_rally_ret: 0.06        # 大涨：QQQ 21 日 >= +6%
-  qqq_dump_ret: -0.06        # 下跌：QQQ 21 日 <= -6%
-  qqq_chop_ret: 0.03         # 震荡：|21 日| < 3%
-  qqq_chop_width: 0.08       # 震荡还须 QQQ 布林带宽 < 8%
-  qqq_chop_no_new: false     # 震荡允许新开
-  qqq_chop_max_hold: 4       # 震荡持仓上限仍为 4
-  qqq_rally_short_top_n: 3   # 大涨：合并观察池里空头最多 3 个（不禁止）
-  qqq_rally_short_ma200_buffer: 0.04  # 大涨：新开空须在 MA200 下方至少 4%
-  qqq_dump_ma200_buffer: 0.04  # 下跌：新开多须离开 MA200 至少 4%
+  qqq_ret_col: ret_21
+  qqq_rally_ret: 0.06
+  qqq_dump_ret: -0.06
+  qqq_chop_ret: 0.03
+  qqq_chop_width: 0.08
+  qqq_chop_no_new: false
+  qqq_chop_max_hold: 4
+  qqq_rally_short_top_n: 3
+  qqq_rally_short_ma200_buffer: 0.04
+  qqq_dump_ma200_buffer: 0.04
 
-# 市場狀態，不是買賣信號。情緒過熱 / 擁擠極端只用於風控提示。
 regime:
-  window: 252                # 滾動分位窗口
+  window: 252
   min_periods: 252
   ma_window: 50
   nhnl_window: 20
-  rsi_window: 14             # Wilder RSI
-  ew_window: 60              # QQQ 相對等權超額
-  top_amount: 10             # 成交額前 10 佔比
-  min_names: 40              # 當天有效成分少於此數，廣度記缺
+  rsi_window: 14
+  ew_window: 60
+  top_amount: 10
+  min_names: 40
   breadth_weight: 0.7
   leverage_weight: 0.3
-  hot: 0.8                   # 過熱 / 雙重極端
+  hot: 0.8
   cold: 0.2
-  split: 0.5                 # 狀態矩陣的高低分界
-  leverage_lag_days: 21      # 月末融資盤晚 21 個日曆日才進日頻，避免未來函數
-  # 只縮已選好的倉，不改觀察池。情緒去掉上漲成交量，用 5 日均值。
+  split: 0.5
+  leverage_lag_days: 21
   use_gross_ladder: true
-  gross_smooth: 5            # 情緒、擁擠都用這麼多日的均值
-  gross_ladder_start: 0.35   # 5 日情緒低於等於這裡開始減倉
-  gross_ladder_step: 0.05    # 每再低 0.05，毛曝光減一檔
-  gross_step: 0.10           # 每一檔 10%
-  gross_floor: 0.60          # 階梯和雙熱的倉位地板
-  dual_hot: 0.80             # 5 日情緒和 5 日擁擠都達到這裡，直接收到地板
+  sentiment_smooth: 5
+  z_window: 252
+  z_hot: 1.5
+  z_cold: -1.5
+  zone_hot: 80
+  gross_smooth: 5
+  gross_ladder_start: 0.35
+  gross_ladder_step: 0.05
+  gross_step: 0.20
+  gross_floor: 0.60
+  dual_hot: 0.80
 
 backtest:
   start: "2018-01-01"
   end: null
-  cost_bps: 10               # 单边滑点+佣金，单位 bp
-  exec: next_close           # T 日收盘定池，T+1 收益用滞后权重
+  cost_bps: 10
+  exec: next_close
   initial_cash: 20000
