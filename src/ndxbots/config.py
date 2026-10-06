@@ -21,12 +21,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# src/ndxbots/config.py → parents[0]=ndxbots, [1]=src, [2]=项目根（和 config.yaml 同级）
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load_yaml() -> dict:
-    """读项目根目录的 config.yaml；文件不存在时返回空 dict，让后面走默认值。"""
     path = PROJECT_ROOT / "config.yaml"
     if not path.exists():
         return {}
@@ -35,7 +33,6 @@ def _load_yaml() -> dict:
 
 
 def _optional_str(value: object | None) -> str | None:
-    """YAML 里写 null / 空字符串都当成「未设置」。"""
     if value is None:
         return None
     text = str(value).strip()
@@ -53,30 +50,17 @@ def _optional_float(value: object | None) -> float | None:
 
 @dataclass(frozen=True)
 class Settings:
-    """
-    全项目只认这一个配置对象。各模块用 load_settings() 拿一份，不要自己再读 yaml。
-
-    字段按模块分组，和 config.yaml 的段落一一对应。
-    """
-
-    # ---------- futu：OpenD 连接 ----------
     futu_host: str
     futu_port: int
-
-    # ---------- data：本地行情 ----------
     data_root: Path
     kline_start: str
     kline_end: str | None
     request_sleep_sec: float
     max_count: int
-
-    # ---------- universe：股票池 ----------
     prefer_futu_plate: bool
     plate_keywords: tuple[str, ...]
     benchmark: str
     extra_codes: tuple[str, ...]
-
-    # ---------- strategy：选股层（日线观察池） ----------
     strategy_factors: tuple[str, ...]
     strategy_invert: tuple[str, ...]
     strategy_top_n: int
@@ -116,8 +100,6 @@ class Settings:
     qqq_rally_short_top_n: int
     qqq_rally_short_ma200_buffer: float
     qqq_dump_ma200_buffer: float
-
-    # ---------- regime：情緒 / 擁擠度，狀態變數，不是買賣信號 ----------
     regime_window: int
     regime_min_periods: int
     regime_ma_window: int
@@ -139,8 +121,11 @@ class Settings:
     gross_step: float
     gross_floor: float
     dual_hot: float
-
-    # ---------- backtest ----------
+    sentiment_smooth: int
+    z_window: int
+    z_hot: float
+    z_cold: float
+    zone_hot: float
     bt_start: str
     bt_end: str | None
     cost_bps: float
@@ -173,9 +158,7 @@ def load_settings() -> Settings:
         data_root=data_root,
         kline_start=os.getenv("KLINE_START", str(data.get("kline_start", "2016-01-01"))),
         kline_end=kline_end,
-        request_sleep_sec=float(
-            os.getenv("REQUEST_SLEEP", data.get("request_sleep_sec", 0.35))
-        ),
+        request_sleep_sec=float(os.getenv("REQUEST_SLEEP", data.get("request_sleep_sec", 0.35))),
         max_count=int(data.get("max_count", 1000)),
         prefer_futu_plate=bool(universe.get("prefer_futu_plate", True)),
         plate_keywords=tuple(universe.get("plate_keywords", ("NASDAQ 100", "NDX"))),
@@ -241,6 +224,11 @@ def load_settings() -> Settings:
         gross_step=float(regime.get("gross_step", 0.10)),
         gross_floor=float(regime.get("gross_floor", 0.60)),
         dual_hot=float(regime.get("dual_hot", 0.80)),
+        sentiment_smooth=int(regime.get("sentiment_smooth", 5)),
+        z_window=int(regime.get("z_window", 252)),
+        z_hot=float(regime.get("z_hot", 1.5)),
+        z_cold=float(regime.get("z_cold", -1.5)),
+        zone_hot=float(regime.get("zone_hot", 80)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
