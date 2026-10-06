@@ -121,11 +121,6 @@ class Settings:
     gross_step: float
     gross_floor: float
     dual_hot: float
-    sentiment_smooth: int
-    z_window: int
-    z_hot: float
-    z_cold: float
-    zone_hot: float
     bt_start: str
     bt_end: str | None
     cost_bps: float
@@ -224,11 +219,6 @@ def load_settings() -> Settings:
         gross_step=float(regime.get("gross_step", 0.10)),
         gross_floor=float(regime.get("gross_floor", 0.60)),
         dual_hot=float(regime.get("dual_hot", 0.80)),
-        sentiment_smooth=int(regime.get("sentiment_smooth", 5)),
-        z_window=int(regime.get("z_window", 252)),
-        z_hot=float(regime.get("z_hot", 1.5)),
-        z_cold=float(regime.get("z_cold", -1.5)),
-        zone_hot=float(regime.get("zone_hot", 80)),
         bt_start=str(backtest.get("start", "2018-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
