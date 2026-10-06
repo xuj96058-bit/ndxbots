@@ -19,9 +19,6 @@ universe:
   benchmark: US.QQQ
   extra_codes:
     - US.QQQ
-    - US.HYG
-    - US.LQD
-    - US.TLT
 
 strategy:
   factors:
@@ -82,15 +79,10 @@ regime:
   split: 0.5
   leverage_lag_days: 21
   use_gross_ladder: true
-  sentiment_smooth: 5
-  z_window: 252
-  z_hot: 1.5
-  z_cold: -1.5
-  zone_hot: 80
   gross_smooth: 5
   gross_ladder_start: 0.35
   gross_ladder_step: 0.05
-  gross_step: 0.20
+  gross_step: 0.10
   gross_floor: 0.60
   dual_hot: 0.80
 

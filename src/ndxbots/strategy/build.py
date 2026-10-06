@@ -43,12 +43,9 @@ def _print_regime(settings) -> None:
     crowding = row.get("crowding")
     sent_txt = f"{sentiment:.3f}" if pd.notna(sentiment) else "nan"
     crowd_txt = f"{crowding:.3f}" if pd.notna(crowding) else "nan"
-    zone = row.get("sentiment_zone") or ""
-    z = row.get("sentiment_z")
-    z_txt = f"{z:+.2f}" if pd.notna(z) else "nan"
     print(
         f"市場狀態 {pd.Timestamp(row['date']).date()}: {row.get('state')}  "
-        f"情緒={sent_txt}  區={zone}  Z={z_txt}  擁擠={crowd_txt}  "
+        f"情緒={sent_txt}  擁擠={crowd_txt}  "
         f"成分={row.get('membership_source')}"
     )
     if bool(row.get("qqq_sentiment_divergence")):
