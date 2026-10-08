@@ -13,6 +13,7 @@ from __future__ import annotations
 """
 
 import os
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -126,6 +127,8 @@ class Settings:
     cost_bps: float
     bt_exec: str
     initial_cash: float
+    rebalance_weekdays: tuple[int, ...] = (1, 4)
+    replacement_score_gap: float = 0.05
 
 
 def load_settings() -> Settings:
@@ -146,6 +149,18 @@ def load_settings() -> Settings:
         kline_end = _optional_str(os.environ.get("KLINE_END"))
 
     bt_end = _optional_str(backtest.get("end"))
+    weekday_values = strategy.get("rebalance_weekdays", [1, 4])
+    if (
+        not isinstance(weekday_values, (list, tuple))
+        or not weekday_values
+        or any(isinstance(day, bool) or not isinstance(day, int) or day not in range(7)
+               for day in weekday_values)
+    ):
+        raise ValueError("strategy.rebalance_weekdays 必须是 0~6 的整数列表（周一=0）")
+    rebalance_weekdays = tuple(dict.fromkeys(weekday_values))
+    replacement_score_gap = float(strategy.get("replacement_score_gap", 0.05))
+    if not math.isfinite(replacement_score_gap) or not 0 <= replacement_score_gap <= 1:
+        raise ValueError("strategy.replacement_score_gap 必须是 0~1 的有限数值")
 
     return Settings(
         futu_host=os.getenv("FUTU_HOST", str(futu.get("host", "127.0.0.1"))),
@@ -224,4 +239,6 @@ def load_settings() -> Settings:
         cost_bps=float(backtest.get("cost_bps", 10)),
         bt_exec=str(backtest.get("exec", "next_close")),
         initial_cash=float(backtest.get("initial_cash", 20_000)),
+        rebalance_weekdays=rebalance_weekdays,
+        replacement_score_gap=replacement_score_gap,
     )

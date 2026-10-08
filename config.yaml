@@ -44,6 +44,8 @@ strategy:
   max_hold: 4
   min_hold_days: 10
   keep_rank: 8
+  rebalance_weekdays: [1, 4]  # Python weekday: Tuesday, Friday
+  replacement_score_gap: 0.05
   macd_gate: false
   rsi_gate: true
   rsi_long_max: 75

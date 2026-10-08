@@ -20,6 +20,9 @@ def main() -> None:
 
     result["curve"].to_csv(curve_path, index=False)
     result["holdings"].to_csv(hold_path, index=False)
+    result["fills"].to_csv(out / "fills.csv", index=False)
+    result["targets"].to_csv(out / "target_orders.csv", index=False)
+    result["logs"].to_csv(out / "execution_logs.csv", index=False)
     text = str(result["stats"])
     stats_path.write_text(text + "\n", encoding="utf-8")
     print(text)

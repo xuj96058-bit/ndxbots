@@ -11,7 +11,7 @@ __pycache__/
 .pytest_cache/
 
 # downloaded / computed data (rebuild locally)
-data/
+/data/
 panel/
 factors/*.parquet
 backtest/*.csv
