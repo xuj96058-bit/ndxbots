@@ -100,6 +100,7 @@ def run_compute() -> None:
             "code",
             "my_ma50_gap",
             "my_struct_gap",
+            "my_efficiency_21",
             "my_rsi_14",
             "my_bb_pctb",
             "my_bb_width",

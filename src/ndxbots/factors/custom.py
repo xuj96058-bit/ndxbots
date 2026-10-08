@@ -53,6 +53,15 @@ def _macd_parts(close: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Dat
     return macd, signal, hist
 
 
+def _efficiency_21(close: pd.DataFrame) -> pd.DataFrame:
+    """21 次价格变化的有向效率；需 22 个完整收盘价，平盘为 0。"""
+    prices = close.where(np.isfinite(close) & close.gt(0))
+    net_move = prices - prices.shift(21)
+    path_move = prices.diff().abs().rolling(21, min_periods=21).sum()
+    efficiency = (net_move / path_move.where(path_move.gt(0))).clip(-1.0, 1.0)
+    return efficiency.mask(path_move.eq(0) & net_move.eq(0), 0.0)
+
+
 def my_factors(
     close: pd.DataFrame,
     volume: pd.DataFrame | None,
@@ -75,6 +84,10 @@ def my_factors(
 
     # 日线结构：对应旧策略 MA5 与 MA20 同向
     out["my_struct_gap"] = (ma5 - ma20) / close.replace(0, pd.NA)
+
+    # 走勢品質：21 日净变动 / 21 次逐日变动绝对值之和。
+    # +1 为平顺上涨，-1 为平顺下跌；缺价保留空值，不使用未来价格。
+    out["my_efficiency_21"] = _efficiency_21(close)
 
     # 离 21 日高：多头用来量「有没有回踩空间」
     out["my_dd_from_high_21"] = close / high21 - 1

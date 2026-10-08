@@ -25,6 +25,7 @@ strategy:
     - my_ma50_gap
     - my_struct_gap
   invert: []
+  quality_weight: 0.50  # Trend group 50%, signed 21-session efficiency group 50%.
   top_n: 10
   require_above_ma200: true
   allow_short: true

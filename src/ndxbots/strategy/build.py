@@ -94,6 +94,7 @@ def run_build() -> None:
     print("执行数量来自本地模拟；真实账户需按实际持仓、现金及成交重新对账。")
     print(
         f"规则: 因子={list(settings.strategy_factors)}  "
+        f"走勢品質權重={settings.strategy_quality_weight:.2f}  "
         f"TopN={settings.strategy_top_n}  全场持仓上限={settings.max_hold}  "
         f"MA200过滤={settings.require_above_ma200}  "
         f"允许做空={settings.allow_short}  "

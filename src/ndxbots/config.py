@@ -129,6 +129,7 @@ class Settings:
     initial_cash: float
     rebalance_weekdays: tuple[int, ...] = (1, 4)
     replacement_score_gap: float = 0.05
+    strategy_quality_weight: float = 0.5
 
 
 def load_settings() -> Settings:
@@ -161,6 +162,9 @@ def load_settings() -> Settings:
     replacement_score_gap = float(strategy.get("replacement_score_gap", 0.05))
     if not math.isfinite(replacement_score_gap) or not 0 <= replacement_score_gap <= 1:
         raise ValueError("strategy.replacement_score_gap 必须是 0~1 的有限数值")
+    quality_weight = float(strategy.get("quality_weight", 0.5))
+    if not math.isfinite(quality_weight) or not 0 <= quality_weight <= 1:
+        raise ValueError("strategy.quality_weight 必须是 0~1 的有限数值")
 
     return Settings(
         futu_host=os.getenv("FUTU_HOST", str(futu.get("host", "127.0.0.1"))),
@@ -175,6 +179,7 @@ def load_settings() -> Settings:
         benchmark=str(universe.get("benchmark", "US.QQQ")),
         extra_codes=tuple(universe.get("extra_codes", ("US.QQQ",))),
         strategy_factors=tuple(strategy.get("factors", ("my_ma50_gap", "my_struct_gap"))),
+        strategy_quality_weight=quality_weight,
         strategy_invert=tuple(strategy.get("invert", ())),
         strategy_top_n=int(strategy.get("top_n", 10)),
         require_above_ma200=bool(strategy.get("require_above_ma200", True)),
