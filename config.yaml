@@ -25,8 +25,8 @@ strategy:
     - my_ma50_gap
     - my_struct_gap
   invert: []
-  quality_weight: 0.50  # Trend group 50%, signed 21-session efficiency group 50%.
-  top_n: 10
+  quality_weight: 0.40  # Trend group 60%, signed 21-session efficiency group 40%.
+  top_n: 8
   require_above_ma200: true
   allow_short: true
   ma200_buffer: 0.015
@@ -42,7 +42,7 @@ strategy:
   short_space_min: 0.01
   short_space_max: 0.12
   min_atr_pct: 0.010
-  max_hold: 4
+  max_hold: 2
   min_hold_days: 10
   keep_rank: 8
   rebalance_weekdays: [1, 4]  # Python weekday: Tuesday, Friday
