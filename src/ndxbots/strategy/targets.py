@@ -1,7 +1,8 @@
 """Complete position targets shared by research execution and pool exports.
 
-Quantities are fixed from the signal close and NAV. They use the same units
-as the input price series; QFQ-adjusted inputs are not broker share counts.
+Signal-close quantities express desired allocations. Entry execution converts
+the incremental notional to a funded budget and sizes at actual fill prices;
+reductions retain quantity targets. QFQ units are not broker share counts.
 """
 from __future__ import annotations
 

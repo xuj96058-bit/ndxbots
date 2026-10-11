@@ -129,7 +129,8 @@ class Settings:
     initial_cash: float
     rebalance_weekdays: tuple[int, ...] = (1, 4)
     replacement_score_gap: float = 0.05
-    strategy_quality_weight: float = 0.5
+    strategy_quality_weight: float = 0.4
+    intraday_root: Path | None = None
 
 
 def load_settings() -> Settings:
@@ -144,12 +145,19 @@ def load_settings() -> Settings:
     data_root = Path(os.getenv("DATA_DIR", data.get("root", "data")))
     if not data_root.is_absolute():
         data_root = PROJECT_ROOT / data_root
+    intraday_value = _optional_str(os.getenv("INTRADAY_DIR", data.get("intraday_root")))
+    intraday_root = Path(intraday_value) if intraday_value else data_root / "intraday" / "kline"
+    if not intraday_root.is_absolute():
+        intraday_root = PROJECT_ROOT / intraday_root
 
     kline_end = _optional_str(data.get("kline_end"))
     if "KLINE_END" in os.environ:
         kline_end = _optional_str(os.environ.get("KLINE_END"))
 
     bt_end = _optional_str(backtest.get("end"))
+    bt_exec = str(backtest.get("exec", "next_intraday"))
+    if bt_exec != "next_intraday":
+        raise ValueError("旧成交版本已被取代，请将 backtest.exec 改为 next_intraday，并准备完整的 5 分钟常规时段行情。")
     weekday_values = strategy.get("rebalance_weekdays", [1, 4])
     if (
         not isinstance(weekday_values, (list, tuple))
@@ -162,7 +170,7 @@ def load_settings() -> Settings:
     replacement_score_gap = float(strategy.get("replacement_score_gap", 0.05))
     if not math.isfinite(replacement_score_gap) or not 0 <= replacement_score_gap <= 1:
         raise ValueError("strategy.replacement_score_gap 必须是 0~1 的有限数值")
-    quality_weight = float(strategy.get("quality_weight", 0.5))
+    quality_weight = float(strategy.get("quality_weight", 0.4))
     if not math.isfinite(quality_weight) or not 0 <= quality_weight <= 1:
         raise ValueError("strategy.quality_weight 必须是 0~1 的有限数值")
 
@@ -170,6 +178,7 @@ def load_settings() -> Settings:
         futu_host=os.getenv("FUTU_HOST", str(futu.get("host", "127.0.0.1"))),
         futu_port=int(os.getenv("FUTU_PORT", futu.get("port", 11111))),
         data_root=data_root,
+        intraday_root=intraday_root,
         kline_start=os.getenv("KLINE_START", str(data.get("kline_start", "2016-01-01"))),
         kline_end=kline_end,
         request_sleep_sec=float(os.getenv("REQUEST_SLEEP", data.get("request_sleep_sec", 0.35))),
@@ -181,7 +190,7 @@ def load_settings() -> Settings:
         strategy_factors=tuple(strategy.get("factors", ("my_ma50_gap", "my_struct_gap"))),
         strategy_quality_weight=quality_weight,
         strategy_invert=tuple(strategy.get("invert", ())),
-        strategy_top_n=int(strategy.get("top_n", 10)),
+        strategy_top_n=int(strategy.get("top_n", 8)),
         require_above_ma200=bool(strategy.get("require_above_ma200", True)),
         allow_short=bool(strategy.get("allow_short", False)),
         space_col=str(strategy.get("space_col", "my_dd_from_high_21")),
@@ -191,7 +200,7 @@ def load_settings() -> Settings:
         short_space_min=float(strategy.get("short_space_min", 0.01)),
         short_space_max=float(strategy.get("short_space_max", 0.12)),
         min_atr_pct=float(strategy.get("min_atr_pct", 0.01)),
-        max_hold=int(strategy.get("max_hold", 4)),
+        max_hold=int(strategy.get("max_hold", 2)),
         min_hold_days=int(strategy.get("min_hold_days", 10)),
         keep_rank=int(strategy.get("keep_rank", 8)),
         ma200_buffer=float(strategy.get("ma200_buffer", 0.015)),
@@ -239,10 +248,10 @@ def load_settings() -> Settings:
         gross_step=float(regime.get("gross_step", 0.10)),
         gross_floor=float(regime.get("gross_floor", 0.60)),
         dual_hot=float(regime.get("dual_hot", 0.80)),
-        bt_start=str(backtest.get("start", "2018-01-01")),
+        bt_start=str(backtest.get("start", "2021-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
-        bt_exec=str(backtest.get("exec", "next_close")),
+        bt_exec=bt_exec,
         initial_cash=float(backtest.get("initial_cash", 20_000)),
         rebalance_weekdays=rebalance_weekdays,
         replacement_score_gap=replacement_score_gap,

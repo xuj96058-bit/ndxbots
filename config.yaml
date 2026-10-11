@@ -4,6 +4,7 @@ futu:
 
 data:
   root: data
+  intraday_root: null  # Defaults to data.root/intraday/kline; optional INTRADAY_DIR override.
   kline_start: "2016-01-01"
   request_sleep_sec: 0.35
   max_count: 1000
@@ -90,8 +91,8 @@ regime:
   dual_hot: 0.80
 
 backtest:
-  start: "2018-01-01"
+  start: "2021-01-01"
   end: null
   cost_bps: 10
-  exec: next_close
+  exec: next_intraday  # Frozen first-group intraday research execution rules.
   initial_cash: 20000

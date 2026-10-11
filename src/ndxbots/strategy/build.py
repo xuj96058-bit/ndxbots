@@ -91,7 +91,8 @@ def run_build() -> None:
     print(f"打分表已写 {scored_path}  行数={len(scored)}")
     print(f"观察池已写 {pool_path}  日期={pool['date'].max().date() if len(pool) else '-'}")
     print(f"执行池已写 {exec_path}  行数={len(exec_pool)}")
-    print("执行数量来自本地模拟；真实账户需按实际持仓、现金及成交重新对账。")
+    print("買入使用清單中的名義預算；target_quantity 是信號時參考數量，減倉仍按數量執行。")
+    print("帳戶來自本地模擬；真實帳戶需按實際持倉、現金及成交重新對帳。")
     print(
         f"规则: 因子={list(settings.strategy_factors)}  "
         f"走勢品質權重={settings.strategy_quality_weight:.2f}  "

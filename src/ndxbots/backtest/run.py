@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 
 from ndxbots.backtest.engine import bt_dir, run_backtest
 from ndxbots.config import load_settings
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="观察池日线回测（对齐 QQQ）")
+    parser = argparse.ArgumentParser(description="第一組 T+1 盤中預算回測（對齊 QQQ）")
     parser.parse_args()
     settings = load_settings()
     result = run_backtest(settings)
@@ -23,6 +24,10 @@ def main() -> None:
     result["fills"].to_csv(out / "fills.csv", index=False)
     result["targets"].to_csv(out / "target_orders.csv", index=False)
     result["logs"].to_csv(out / "execution_logs.csv", index=False)
+    result["completion"].to_csv(out / "execution_completion.csv", index=False)
+    (out / "audit.json").write_text(
+        json.dumps(result["audit"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     text = str(result["stats"])
     stats_path.write_text(text + "\n", encoding="utf-8")
     print(text)

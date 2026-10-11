@@ -202,11 +202,11 @@ class ScoreTableTests(unittest.TestCase):
 
 
 class QualityWeightConfigurationTests(unittest.TestCase):
-    def test_empty_and_legacy_yaml_adopt_new_half_quality_default(self):
+    def test_missing_quality_weight_adopts_confirmed_first_group_default(self):
         for raw in [{}, {"strategy": {"factors": ["my_ma50_gap", "my_struct_gap"], "invert": []}}]:
             with self.subTest(raw=raw), patch("ndxbots.config._load_yaml", return_value=raw):
                 settings = load_settings()
-                self.assertEqual(settings.strategy_quality_weight, 0.5)
+                self.assertEqual(settings.strategy_quality_weight, 0.4)
                 self.assertEqual(settings.strategy_factors, ("my_ma50_gap", "my_struct_gap"))
                 self.assertEqual(settings.strategy_invert, ())
 
@@ -215,7 +215,7 @@ class QualityWeightConfigurationTests(unittest.TestCase):
             settings = load_settings()
         old_arguments = {field.name: getattr(settings, field.name) for field in fields(settings)
                          if field.name != "strategy_quality_weight"}
-        self.assertEqual(Settings(**old_arguments).strategy_quality_weight, 0.5)
+        self.assertEqual(Settings(**old_arguments).strategy_quality_weight, 0.4)
 
     def test_explicit_valid_weights_include_legacy_and_quality_endpoints(self):
         for weight in [0, 0.25, 0.5, 1, "0.75"]:
