@@ -289,12 +289,6 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
             & (~new_short | rsi_short_ok)
         )
 
-    
-    # Hard Hurst gate for new longs only (window 126 classic). Existing holdings unaffected.
-    HURST_LOW = 0.67
-    if "my_hurst_126" in df.columns:
-        hurst_ok = df["my_hurst_126"].fillna(0) > HURST_LOW
-        long_eligible &= (~new_long) | hurst_ok
     long_eligible, short_eligible = apply_qqq_regime_gates(
         df, settings, new_long, new_short, long_eligible, short_eligible
     )
@@ -359,10 +353,14 @@ def apply_holding_hysteresis(
                    for day, cap in (max_hold_by_date or {}).items()}
     columns = ["code", "regime_side", "pool_side", "side_score", "combo_rank",
                "in_pool", "long_score", "short_score"]
+    has_hurst = "my_hurst_126" in df.columns
+    if has_hurst:
+        columns.append("my_hurst_126")
     by_date = {}
     for day, frame in df.groupby("date", sort=False):
         meta = {}
         for row in frame[columns].itertuples(index=True):
+            hurst = getattr(row, "my_hurst_126", np.nan)
             meta[str(row.code)] = {
                 "i": row.Index,
                 "regime": row.regime_side if pd.notna(row.regime_side) else None,
@@ -372,6 +370,8 @@ def apply_holding_hysteresis(
                 "in_pool": bool(row.in_pool) if pd.notna(row.in_pool) else False,
                 "long_score": float(row.long_score) if pd.notna(row.long_score) else np.nan,
                 "short_score": float(row.short_score) if pd.notna(row.short_score) else np.nan,
+                "new_long_hurst_ok": (not has_hurst or
+                                      (pd.notna(hurst) and np.isfinite(hurst) and hurst > 0.67)),
             }
         by_date[pd.Timestamp(day)] = meta
     prev: dict[str, tuple[str, int]] = {}
@@ -407,7 +407,11 @@ def apply_holding_hysteresis(
                           and np.isfinite(info["side_score"]) and np.isfinite(info["rank"])
                           and info["rank"] <= settings.strategy_top_n]
             candidates.sort(key=lambda code: (-meta[code]["side_score"], meta[code]["rank"], code))
-            challengers = [code for code in candidates if code not in kept]
+            # Gate actual new long admissions, after pool/ranking. A regime's
+            # "new_long" flag does not tell us whether this account holds it.
+            challengers = [code for code in candidates if code not in kept
+                           and (meta[code]["pool_side"] != "long"
+                                or meta[code]["new_long_hurst_ok"])]
             available_old = {code: kept[code] for code in kept if not protected(code)}
             used = set()
             for code in challengers:
@@ -445,3 +449,65 @@ def apply_holding_hysteresis(
 
     df["in_hold"] = df["in_hold_long"] | df["in_hold_short"]
     return df
+
+
+def latest_pool(scored: pd.DataFrame) -> pd.DataFrame:
+    if scored.empty:
+        return scored
+    last = scored["date"].max()
+    cols = [
+        c
+        for c in [
+            "date",
+            "code",
+            "side",
+            "qqq_regime",
+            "slope_zone",
+            "regime_side",
+            "score",
+            "long_score",
+            "short_score",
+            "trend_score",
+            "quality_long_score",
+            "quality_short_score",
+            "side_score",
+            "combo_rank",
+            "pool_side",
+            "pool_rank",
+            "short_pool_rank",
+            "in_pool",
+            "in_hold",
+            "in_pool_long",
+            "in_pool_short",
+            "in_hold_long",
+            "in_hold_short",
+            "hold_days_long",
+            "hold_days_short",
+            "abs_strength",
+            "above_ma200",
+            "below_ma200",
+            "space_ok",
+            "short_space_ok",
+            "atr_ok",
+            "bb_width_ok",
+            "my_ma50_gap",
+            "my_struct_gap",
+            "my_efficiency_21",
+            "my_dd_from_high_21",
+            "my_dist_from_low_21",
+            "my_ma200_gap",
+            "my_ma200_slope",
+            "my_ma200_slope_atr",
+            "my_atr_pct",
+            "my_rsi_14",
+            "my_bb_width",
+            "my_macd_hist_chg",
+        ]
+        if c in scored.columns
+    ]
+    out = scored.loc[scored["date"] == last, cols].copy()
+    return out.sort_values(
+        [c for c in ["in_pool", "combo_rank", "code"] if c in out.columns],
+        ascending=[False if c == "in_pool" else True
+                   for c in ["in_pool", "combo_rank", "code"] if c in out.columns],
+    )
