@@ -1,1 +1,1 @@
-$(cat /tmp/custom_new.py)
+PLACEHOLDER
