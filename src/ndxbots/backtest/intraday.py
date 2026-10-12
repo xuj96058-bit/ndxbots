@@ -145,15 +145,20 @@ class IntradaySimulator:
             raise ValueError("Sentiment gross targets must be finite and nonnegative")
         # Benchmark Hurst is known at the T-day close; these gross targets feed
         # the existing T+1 order queue, with no change to selection or cash limits.
+        self.long_entry_allowed = np.ones(self.raw.shape, dtype=bool)
         if factors is not None and "my_hurst_126" in factors.columns:
-            benchmark_hurst = factors.loc[
-                factors.code.eq(benchmark), ["date", "my_hurst_126"]
-            ].copy()
+            hurst_factors = factors[["date", "code", "my_hurst_126"]].copy()
+            hurst_factors["date"] = pd.to_datetime(hurst_factors.date).dt.normalize()
+            if hurst_factors.duplicated(["date", "code"]).any():
+                raise ValueError("Hurst factors contain duplicate date/code rows")
+            hurst_factors["my_hurst_126"] = pd.to_numeric(hurst_factors.my_hurst_126)
+            stock_hurst = (hurst_factors.pivot(index="date", columns="code", values="my_hurst_126")
+                           .reindex(index=self.dates, columns=self.codes)
+                           .to_numpy(dtype=float, na_value=np.nan))
+            self.long_entry_allowed = np.isfinite(stock_hurst) & (stock_hurst > 0.67)
+            benchmark_hurst = hurst_factors.loc[hurst_factors.code.eq(benchmark)]
             if not benchmark_hurst.empty:
-                benchmark_hurst["date"] = pd.to_datetime(benchmark_hurst.date).dt.normalize()
-                if benchmark_hurst.date.duplicated().any():
-                    raise ValueError("Benchmark Hurst factors contain duplicate dates")
-                hurst = pd.to_numeric(benchmark_hurst.set_index("date")["my_hurst_126"])
+                hurst = benchmark_hurst.set_index("date")["my_hurst_126"]
                 hurst = hurst.reindex(self.dates).to_numpy(dtype=float, na_value=np.nan)
                 if np.isinf(hurst).any():
                     raise ValueError("Benchmark Hurst factors must be finite or missing")
@@ -303,9 +308,15 @@ class IntradaySimulator:
             union = (self.selected[t] != 0) | held | (np.abs(decision.quantities) > EPS)
             for j in np.flatnonzero(union):
                 target = float(decision.quantities[j])
+                reason = decision.reasons.get(int(j), 'hold_quantity')
+                # Selection can predate bt_start; a selected name is not
+                # necessarily already held by this cash account.
+                hurst_blocked = target > EPS and quantity[j] <= EPS and not self.long_entry_allowed[t, j]
+                if hurst_blocked:
+                    target = 0.0  # A blocked reversal still closes its old short.
+                    reason = 'new_long_hurst_blocked'
                 delta = target - quantity[j]
                 valid = bool(np.isfinite(self.raw[t, j]) and self.raw[t, j] > 0)
-                reason = decision.reasons.get(int(j), 'hold_quantity')
                 if abs(delta) > EPS:
                     if valid:
                         pending.append(Order(int(j), target, reason, day, nav))
@@ -332,7 +343,7 @@ class IntradaySimulator:
                     'scheduled_review': day.weekday() in self.weekdays,
                     'in_pool': bool(self.pool[t, j]),
                     'in_selected': bool(self.selected[t, j]),
-                    'order_status': 'queued_next_intraday' if abs(delta) > EPS and valid else 'blocked_missing_signal_quote' if abs(delta) > EPS else 'hold',
+                    'order_status': 'queued_next_intraday' if abs(delta) > EPS and valid else 'blocked_missing_signal_quote' if abs(delta) > EPS else 'blocked_hurst_entry' if hurst_blocked else 'hold',
                     'urgent': urgent_by_index.get(int(j), False),
                     'sizing_mode': 'notional_budget',
                     'planned_addition_notional': (abs(target) if target * quantity[j] < 0 else max(0.0, abs(target) - abs(quantity[j]))) * float(self.raw[t, j]),

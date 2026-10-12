@@ -408,7 +408,7 @@ def apply_holding_hysteresis(
                           and info["rank"] <= settings.strategy_top_n]
             candidates.sort(key=lambda code: (-meta[code]["side_score"], meta[code]["rank"], code))
             # Gate actual new long admissions, after pool/ranking. A regime's
-            # "new_long" flag does not tell us whether this account holds it.
+            # "new_long" flag does not tell us whether selection already holds it.
             challengers = [code for code in candidates if code not in kept
                            and (meta[code]["pool_side"] != "long"
                                 or meta[code]["new_long_hurst_ok"])]

@@ -33,7 +33,7 @@ def fixture(hurst=(.65, .65, .65, .65), *, cost=0., benchmark="US.QQQ"):
                            "in_hold": True, "in_pool": True, "score": .8})
     factors = pd.concat([
         pd.DataFrame({"date": days, "code": "US.A", "my_atr_pct_20": .1,
-                      "my_hurst_126": .1}),
+                      "my_hurst_126": .8}),
         pd.DataFrame({"date": days, "code": benchmark, "my_atr_pct_20": .1,
                       "my_hurst_126": hurst}),
     ], ignore_index=True)
@@ -53,6 +53,7 @@ class IntradayHurstTests(unittest.TestCase):
     def test_thresholds_boundaries_and_missing_values_use_benchmark_only(self):
         parts = fixture((.750001, .549999, .55, .75, .65, np.nan, .8))
         factors = parts[2]
+        factors.loc[factors.code.eq("US.A"), "my_hurst_126"] = .1
         # A missing benchmark row must not carry yesterday's scale forward.
         factors = factors.drop(factors.index[-1])
         simulator = IntradaySimulator(parts[0], parts[1], factors, parts[3])
