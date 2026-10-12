@@ -41,6 +41,7 @@ def fixture(stock_hurst, *, benchmark_hurst=None, sides=None, start=None):
     scored = pd.DataFrame({"date": days, "code": "US.A", "side": sides,
                            "in_hold": True, "in_pool": True, "score": .8})
     settings = replace(load_settings(), benchmark="US.QQQ", bt_exec="next_intraday",
+                       hurst_gate_mode="strict_entry",
                        bt_start=start or str(days[0].date()), bt_end=str(days[-1].date()),
                        initial_cash=1_000., cost_bps=0., max_hold=2,
                        use_gross_ladder=False, rebalance_weekdays=(1, 4))
@@ -53,6 +54,19 @@ def simulate(parts):
 
 
 class HurstAccountAdmissionTests(unittest.TestCase):
+    def test_legacy_mode_preserves_selection_and_native_execution_with_benchmark_scale(self):
+        parts = fixture([.5] * 5, benchmark_hurst=[.5] * 5)
+        legacy = replace(parts[0], hurst_gate_mode="legacy_regime")
+        result = simulate((legacy, *parts[1:]))
+        fill = result["fills"].iloc[0]
+        self.assertEqual(fill.signal_date, pd.Timestamp("2024-01-02"))
+        self.assertEqual(fill.date, pd.Timestamp("2024-01-03"))
+        self.assertEqual(fill.time, 600)
+        self.assertEqual(fill.trigger, "initial_entry")
+        self.assertEqual(fill.quantity, 50.)
+        self.assertEqual(result["curve"].cash.iloc[1], 500.)
+        self.assertTrue(result["completion"].complete.all())
+
     def test_warmup_selection_cannot_open_a_low_hurst_long_in_fresh_account(self):
         parts = fixture([.8, .5, .5, .5, .5], start="2024-01-03")
         selection_input = parts[3].assign(

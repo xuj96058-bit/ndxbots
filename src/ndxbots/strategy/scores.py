@@ -289,6 +289,12 @@ def build_score_table(factors: pd.DataFrame, settings: Settings) -> pd.DataFrame
             & (~new_short | rsi_short_ok)
         )
 
+    if getattr(settings, "hurst_gate_mode", "strict_entry") == "legacy_regime":
+        # Reproduce the original regime-based gate before pool/ranking. Here
+        # new_long describes the slope regime, not actual account ownership.
+        if "my_hurst_126" in df.columns:
+            hurst_ok = df["my_hurst_126"].fillna(0) > 0.67
+            long_eligible &= (~new_long) | hurst_ok
     long_eligible, short_eligible = apply_qqq_regime_gates(
         df, settings, new_long, new_short, long_eligible, short_eligible
     )
@@ -353,7 +359,8 @@ def apply_holding_hysteresis(
                    for day, cap in (max_hold_by_date or {}).items()}
     columns = ["code", "regime_side", "pool_side", "side_score", "combo_rank",
                "in_pool", "long_score", "short_score"]
-    has_hurst = "my_hurst_126" in df.columns
+    has_hurst = (getattr(settings, "hurst_gate_mode", "strict_entry") == "strict_entry"
+                 and "my_hurst_126" in df.columns)
     if has_hurst:
         columns.append("my_hurst_126")
     by_date = {}
@@ -407,8 +414,8 @@ def apply_holding_hysteresis(
                           and np.isfinite(info["side_score"]) and np.isfinite(info["rank"])
                           and info["rank"] <= settings.strategy_top_n]
             candidates.sort(key=lambda code: (-meta[code]["side_score"], meta[code]["rank"], code))
-            # Gate actual new long admissions, after pool/ranking. A regime's
-            # "new_long" flag does not tell us whether selection already holds it.
+            # Only strict_entry gates actual admissions after pool/ranking.
+            # legacy_regime already applied its gate before assigning the pool.
             challengers = [code for code in candidates if code not in kept
                            and (meta[code]["pool_side"] != "long"
                                 or meta[code]["new_long_hurst_ok"])]

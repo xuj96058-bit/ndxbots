@@ -155,7 +155,10 @@ class IntradaySimulator:
             stock_hurst = (hurst_factors.pivot(index="date", columns="code", values="my_hurst_126")
                            .reindex(index=self.dates, columns=self.codes)
                            .to_numpy(dtype=float, na_value=np.nan))
-            self.long_entry_allowed = np.isfinite(stock_hurst) & (stock_hurst > 0.67)
+            # Legacy mode reproduces the score table's regime-only Hurst gate;
+            # strict mode additionally checks actual new account positions.
+            if getattr(settings, "hurst_gate_mode", "strict_entry") == "strict_entry":
+                self.long_entry_allowed = np.isfinite(stock_hurst) & (stock_hurst > 0.67)
             benchmark_hurst = hurst_factors.loc[hurst_factors.code.eq(benchmark)]
             if not benchmark_hurst.empty:
                 hurst = benchmark_hurst.set_index("date")["my_hurst_126"]

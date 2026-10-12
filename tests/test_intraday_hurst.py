@@ -38,6 +38,7 @@ def fixture(hurst=(.65, .65, .65, .65), *, cost=0., benchmark="US.QQQ"):
                       "my_hurst_126": hurst}),
     ], ignore_index=True)
     settings = replace(load_settings(), benchmark=benchmark, bt_exec="next_intraday",
+                       hurst_gate_mode="strict_entry",
                        bt_start=str(days[0].date()), bt_end=str(days[-1].date()),
                        initial_cash=1_000., cost_bps=cost, max_hold=2,
                        use_gross_ladder=False, rebalance_weekdays=(1, 4))

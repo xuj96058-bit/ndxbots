@@ -19,6 +19,7 @@ from ndxbots.strategy.scores import apply_holding_hysteresis, build_score_table
 def selection_settings(**changes):
     values = dict(max_hold=1, min_hold_days=1, keep_rank=0,
                   strategy_factors=("f1",), strategy_top_n=10,
+                  hurst_gate_mode="strict_entry",
                   rebalance_weekdays=(1, 4), replacement_score_gap=.05)
     values.update(changes)
     return SimpleNamespace(**values)
@@ -79,6 +80,7 @@ class HurstScoreIntegrationTests(unittest.TestCase):
         with patch("ndxbots.config._load_yaml", return_value={}):
             original = load_settings()
         values = dict(strategy_factors=("f1",), strategy_quality_weight=0,
+                      hurst_gate_mode="strict_entry",
                       strategy_top_n=10, qqq_regime_gate=False,
                       require_above_ma200=False, allow_short=True,
                       space_col="", short_space_col="", min_atr_pct=0,
@@ -111,6 +113,44 @@ class HurstScoreIntegrationTests(unittest.TestCase):
         selected = result.loc[result.in_hold, "code"].tolist()
         self.assertEqual(selected, ["A", "A"])
         self.assertEqual(result.loc[result.in_hold, "hold_days_long"].tolist(), [1, 2])
+
+    def test_legacy_repeated_long_regime_admits_low_hurst_after_first_day(self):
+        frame = pd.DataFrame({"date": pd.to_datetime(["2024-01-02", "2024-01-05"]),
+                              "code": "A", "f1": 1., "my_hurst_126": .4})
+        result = build_score_table(frame, self.settings(hurst_gate_mode="legacy_regime"))
+        self.assertEqual(result.in_pool_long.tolist(), [False, True])
+        self.assertEqual(result.in_hold_long.tolist(), [False, True])
+        strict = build_score_table(frame, self.settings())
+        self.assertTrue(strict.in_pool_long.all())
+        self.assertFalse(strict.in_hold_long.any())
+
+    def test_legacy_strong_long_gate_filters_before_ranking(self):
+        frame = pd.DataFrame([
+            dict(date=pd.Timestamp("2024-01-02"), code=code, f1=score,
+                 my_hurst_126=hurst, my_ma200_slope_atr=2., my_ma200_gap=.1)
+            for code, score, hurst in [("A", 2., .67), ("B", 1., .8)]])
+        result = build_score_table(frame, self.settings(hurst_gate_mode="legacy_regime", strategy_top_n=1))
+        self.assertEqual(result.loc[result.in_pool, "code"].tolist(), ["B"])
+        self.assertEqual(result.loc[result.in_hold, "code"].tolist(), ["B"])
+        self.assertEqual(result.loc[result.code.eq("B"), "combo_rank"].iloc[0], 1.)
+        strict = build_score_table(frame, self.settings(strategy_top_n=1))
+        self.assertEqual(strict.loc[strict.in_pool, "code"].tolist(), ["A"])
+        self.assertFalse(strict.in_hold.any())
+
+    def test_legacy_missing_hurst_value_blocks_new_regime_but_absent_column_does_not(self):
+        frame = pd.DataFrame({"date": [pd.Timestamp("2024-01-02")], "code": "A", "f1": 1.,
+                              "my_hurst_126": np.nan, "my_ma200_slope_atr": 2., "my_ma200_gap": .1})
+        settings = self.settings(hurst_gate_mode="legacy_regime")
+        self.assertFalse(build_score_table(frame, settings).in_hold.any())
+        self.assertTrue(build_score_table(frame.drop(columns="my_hurst_126"), settings).in_hold.all())
+
+    def test_legacy_low_hurst_incumbent_remains_without_a_replacement(self):
+        frame = pd.DataFrame({"date": pd.to_datetime(["2024-01-02", "2024-01-05"]),
+                              "code": "A", "f1": 1., "my_hurst_126": [.8, .4],
+                              "my_ma200_slope_atr": 2., "my_ma200_gap": .1})
+        result = build_score_table(frame, self.settings(hurst_gate_mode="legacy_regime"))
+        self.assertEqual(result.in_pool_long.tolist(), [True, False])
+        self.assertEqual(result.in_hold_long.tolist(), [True, True])
 
 
 if __name__ == "__main__":

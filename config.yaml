@@ -22,6 +22,7 @@ universe:
     - US.QQQ
 
 strategy:
+  hurst_gate_mode: legacy_regime  # Original regime-based Hurst gate before pool/ranking; strict_entry gates actual new positions.
   factors:
     - my_ma50_gap
     - my_struct_gap
