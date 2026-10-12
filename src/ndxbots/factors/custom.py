@@ -62,6 +62,31 @@ def _efficiency_21(close: pd.DataFrame) -> pd.DataFrame:
     return efficiency.mask(path_move.eq(0) & net_move.eq(0), 0.0)
 
 
+
+def _hurst_classic(close: pd.DataFrame, window: int = 126, max_lag: int = 20) -> pd.DataFrame:
+    """Classic rolling Hurst: log price, H = 2 * slope of log(std(diff_lag)) vs log(lag)."""
+    logp = np.log(close.where(close > 0))
+    def _h(arr):
+        if np.isnan(arr).any() or len(arr) < max_lag + 5:
+            return np.nan
+        lags = np.arange(2, max_lag + 1)
+        tau = []
+        for lag in lags:
+            diff = arr[lag:] - arr[:-lag]
+            if len(diff) < 5:
+                return np.nan
+            std = np.std(diff)
+            if std <= 0 or not np.isfinite(std):
+                return np.nan
+            tau.append(std)
+        tau = np.array(tau)
+        if (tau <= 0).any():
+            return np.nan
+        slope = np.polyfit(np.log(lags), np.log(tau), 1)[0]
+        return 2.0 * slope
+    return logp.rolling(window, min_periods=window).apply(_h, raw=True)
+
+
 def my_factors(
     close: pd.DataFrame,
     volume: pd.DataFrame | None,
@@ -88,6 +113,7 @@ def my_factors(
     # 走勢品質：21 日净变动 / 21 次逐日变动绝对值之和。
     # +1 为平顺上涨，-1 为平顺下跌；缺价保留空值，不使用未来价格。
     out["my_efficiency_21"] = _efficiency_21(close)
+    out["my_hurst_126"] = _hurst_classic(close, window=126)
 
     # 离 21 日高：多头用来量「有没有回踩空间」
     out["my_dd_from_high_21"] = close / high21 - 1

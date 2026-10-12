@@ -131,6 +131,7 @@ class Settings:
     replacement_score_gap: float = 0.05
     strategy_quality_weight: float = 0.4
     intraday_root: Path | None = None
+    hurst_gate_mode: str = "strict_entry"
 
 
 def load_settings() -> Settings:
@@ -173,6 +174,9 @@ def load_settings() -> Settings:
     quality_weight = float(strategy.get("quality_weight", 0.4))
     if not math.isfinite(quality_weight) or not 0 <= quality_weight <= 1:
         raise ValueError("strategy.quality_weight 必须是 0~1 的有限数值")
+    hurst_gate_mode = str(strategy.get("hurst_gate_mode", "strict_entry"))
+    if hurst_gate_mode not in {"legacy_regime", "strict_entry"}:
+        raise ValueError("strategy.hurst_gate_mode 必须是 legacy_regime 或 strict_entry")
 
     return Settings(
         futu_host=os.getenv("FUTU_HOST", str(futu.get("host", "127.0.0.1"))),
@@ -189,6 +193,7 @@ def load_settings() -> Settings:
         extra_codes=tuple(universe.get("extra_codes", ("US.QQQ",))),
         strategy_factors=tuple(strategy.get("factors", ("my_ma50_gap", "my_struct_gap"))),
         strategy_quality_weight=quality_weight,
+        hurst_gate_mode=hurst_gate_mode,
         strategy_invert=tuple(strategy.get("invert", ())),
         strategy_top_n=int(strategy.get("top_n", 8)),
         require_above_ma200=bool(strategy.get("require_above_ma200", True)),
