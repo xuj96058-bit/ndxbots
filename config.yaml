@@ -77,12 +77,15 @@ regime:
   ew_window: 60
   top_amount: 10
   min_names: 40
+  min_coverage: 0.80
   breadth_weight: 0.7
   leverage_weight: 0.3
   hot: 0.8
   cold: 0.2
   split: 0.5
   leverage_lag_days: 21
+  leverage_max_age_days: 90
+  missing_policy: floor  # Missing/invalid regime data uses gross_floor; error fails explicitly.
   use_gross_ladder: true
   gross_smooth: 5
   gross_ladder_start: 0.35
@@ -97,3 +100,4 @@ backtest:
   cost_bps: 10
   exec: next_intraday  # Frozen first-group intraday research execution rules.
   initial_cash: 20000
+

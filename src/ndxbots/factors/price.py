@@ -33,7 +33,12 @@ def rsi(close: pd.DataFrame, window: int = 14) -> pd.DataFrame:
     avg_gain = gain.ewm(alpha=1 / window, min_periods=window, adjust=False).mean()
     avg_loss = loss.ewm(alpha=1 / window, min_periods=window, adjust=False).mean()
     rs = avg_gain / avg_loss.replace(0, np.nan)
-    return 100 - (100 / (1 + rs))
+    result = 100 - (100 / (1 + rs))
+    # A complete rising path has RSI 100; a complete flat path is neutral.
+    result = result.mask((avg_loss == 0) & (avg_gain > 0), 100.0)
+    result = result.mask((avg_gain == 0) & (avg_loss > 0), 0.0)
+    result = result.mask((avg_gain == 0) & (avg_loss == 0), 50.0)
+    return result
 
 
 def volume_ratio(volume: pd.DataFrame, window: int) -> pd.DataFrame:
@@ -50,3 +55,4 @@ def melt_factor(wide: pd.DataFrame, name: str) -> pd.DataFrame:
     out = wide.stack(future_stack=True).rename(name).reset_index()
     out.columns = ["date", "code", name]
     return out
+

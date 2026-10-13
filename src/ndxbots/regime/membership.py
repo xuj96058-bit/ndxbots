@@ -58,21 +58,43 @@ def member_mask(
     benchmark: str,
 ) -> tuple[pd.DataFrame, str]:
     """回傳 date x code 的 bool 表。True = 當天算進成分。"""
+    mask, source, _ = member_mask_with_expected(dates, codes, settings, benchmark)
+    return mask, source
+
+
+def member_mask_with_expected(
+    dates: pd.DatetimeIndex,
+    codes: list[str],
+    settings: Settings,
+    benchmark: str,
+) -> tuple[pd.DataFrame, str, pd.Series]:
+    """Also count all expected historical members, including absent price codes.
+
+    Counts deduplicate overlapping intervals for a code. Without historical
+    intervals, expected coverage is unknown rather than assumed complete.
+    """
     intervals, source = load_membership_intervals(settings)
     mask = pd.DataFrame(False, index=pd.DatetimeIndex(dates), columns=list(codes))
     if intervals is None:
         static = [c for c in codes if c != benchmark]
         if static:
             mask.loc[:, static] = True
-        return mask, source
+        expected = pd.Series(float("nan"), index=mask.index, name="n_expected_members")
+        return mask, source, expected
 
+    all_codes = sorted(set(intervals["code"]) - {benchmark})
+    historical_mask = pd.DataFrame(False, index=mask.index, columns=all_codes)
     for rec in intervals.itertuples(index=False):
-        if rec.code not in mask.columns or rec.code == benchmark:
+        if rec.code == benchmark:
             continue
         start = pd.Timestamp(rec.start).normalize()
         end = pd.Timestamp(rec.end).normalize() if pd.notna(rec.end) else None
         slot = mask.index >= start
         if end is not None:
             slot = slot & (mask.index <= end)
-        mask.loc[slot, rec.code] = True
-    return mask, source
+        historical_mask.loc[slot, rec.code] = True
+        if rec.code in mask.columns:
+            mask.loc[slot, rec.code] = True
+    expected = historical_mask.sum(axis=1).rename("n_expected_members")
+    return mask, source, expected
+

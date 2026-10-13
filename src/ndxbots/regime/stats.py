@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def rolling_percentile(series: pd.Series, window: int, min_periods: int) -> pd.Series:
-    """今天的值在最近 window 個有效觀察裡的位置。0=最低，1=最高，含今天。"""
+    """含今天的 trailing empirical midrank；相同值取中點，常數序列為 0.5。"""
 
     def _pct(values: np.ndarray) -> float:
         if len(values) == 0 or np.isnan(values[-1]):
@@ -14,7 +14,7 @@ def rolling_percentile(series: pd.Series, window: int, min_periods: int) -> pd.S
         if len(valid) < min_periods:
             return np.nan
         current = values[-1]
-        return float(np.mean(valid <= current))
+        return float((np.sum(valid < current) + 0.5 * np.sum(valid == current)) / len(valid))
 
     return series.rolling(window, min_periods=min_periods).apply(_pct, raw=True)
 
@@ -35,7 +35,7 @@ def classify_state(
     sent_high = sentiment >= split
     crowd_high = crowding >= split
     if sent_high and crowd_high:
-        label = "双重极端"
+        label = "情绪/拥挤偏高"
     elif sent_high and not crowd_high:
         label = "健康上涨"
     elif (not sent_high) and crowd_high:
@@ -56,3 +56,4 @@ def classify_state(
     if tags:
         return f"{label}（{'，'.join(tags)}）"
     return label
+
