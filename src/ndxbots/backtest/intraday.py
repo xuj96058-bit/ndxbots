@@ -14,7 +14,7 @@ import pandas as pd
 from ndxbots.backtest.execution import EPS, Order
 from ndxbots.backtest.intraday_prices import IntradayPriceStore
 from ndxbots.backtest.intraday_schedule import Policy, execution_schedule
-from ndxbots.regime.exposure import gross_by_date, load_regime_table
+from ndxbots.regime.exposure import exposure_by_date, gross_by_date, load_regime_table
 from ndxbots.strategy.targets import decide_quantity_targets
 
 ENTRY_POLICY = Policy("entry_d30_f50_gap1_atr", delay=30, first_fraction=.5,
@@ -136,13 +136,20 @@ class IntradaySimulator:
         if np.count_nonzero(self.selected, axis=1).max(initial=0) > self.max_hold:
             raise ValueError("Selection exceeds the configured holding count")
         gross = pd.Series(1.0, index=calendar)
+        diagnostics = pd.DataFrame({"date": calendar, "gross_target": 1.0,
+                                    "gross_reason": "ladder_disabled", "gross_data_fallback": False,
+                                    "regime_data_valid": False, "regime_quality_known": False,
+                                    "regime_data_reason": "ladder_disabled"})
         if settings.use_gross_ladder:
             regime = load_regime_table(settings)
-            if regime is not None:
-                gross = gross_by_date(regime, settings).reindex(calendar).fillna(1.0)
+            diagnostics = exposure_by_date(regime, settings, dates=calendar, required_dates=self.dates)
+            gross = gross_by_date(regime, settings, dates=calendar, required_dates=self.dates).reindex(calendar)
         self.gross = gross.reindex(self.dates).to_numpy(float)
         if not np.isfinite(self.gross).all() or (self.gross < 0).any():
             raise ValueError("Sentiment gross targets must be finite and nonnegative")
+        diagnostics = diagnostics.set_index("date").reindex(self.dates)
+        diagnostics["regime_gross_target"] = self.gross
+        diagnostics["gross_hurst_scale"] = 1.0
         # Benchmark Hurst is known at the T-day close; these gross targets feed
         # the existing T+1 order queue, with no change to selection or cash limits.
         self.long_entry_allowed = np.ones(self.raw.shape, dtype=bool)
@@ -169,6 +176,19 @@ class IntradaySimulator:
                 scale[hurst > 0.75] = 1.3
                 scale[hurst < 0.55] = 0.5
                 self.gross = np.clip(self.gross * scale, 0.0, 1.5)
+                diagnostics["gross_hurst_scale"] = scale
+                diagnostics.loc[scale > 1, "gross_reason"] += ";hurst_high"
+                diagnostics.loc[scale < 1, "gross_reason"] += ";hurst_low"
+        diagnostics["gross_target"] = self.gross
+        diagnostic_columns = [column for column in diagnostics.columns
+                              if column in {"sentiment", "crowding"} or column.startswith(
+                                  ("sentiment_", "crowding_", "gross_", "regime_", "membership_",
+                                   "leverage_", "n_", "coverage_"))]
+        for column in ("sentiment", "sentiment_trade", "sentiment_trade_smooth", "crowding_smooth"):
+            if column not in diagnostics:
+                diagnostics[column] = np.nan
+                diagnostic_columns.append(column)
+        self.regime_diagnostics = diagnostics[diagnostic_columns]
         self.atr = _atr20(panel, factors, self.dates, self.codes, self.raw)
         benchmark_close = close[benchmark].reindex(calendar).ffill().reindex(self.dates)
         if benchmark_close.isna().any() or (benchmark_close <= 0).any():
@@ -275,6 +295,7 @@ class IntradaySimulator:
             'max_fill_nav_conservation_error': 0.0,
         }
         for t, day in enumerate(self.dates):
+            regime_record = self.regime_diagnostics.loc[day].to_dict()
             prices = self.valuation[t]
             held_start = np.abs(quantity) > EPS
             if not np.isfinite(prices[held_start]).all():
@@ -354,6 +375,7 @@ class IntradaySimulator:
                     'entry_time_et': '10:00',
                     'exit_time_et': '09:30' if urgent_by_index.get(int(j), False) else '09:45',
                     'deadline_rule_et': '15:55 / half-day 12:55',
+                    **regime_record,
                 })
             for item in daycompletions:
                 audit['executed_order_rows'] += 1
@@ -406,6 +428,7 @@ class IntradaySimulator:
                 'effective_gross_budget': effective_gross,
                 'fills': len(dayfills),
                 'pending_order_rows': len(pending),
+                **regime_record,
             })
             for j in np.flatnonzero(held):
                 holding_rows.append({
@@ -417,6 +440,7 @@ class IntradaySimulator:
                     'w': float(quantity[j] * prices[j] / nav),
                     'gross_target': float(self.gross[t]),
                     'value': float(quantity[j] * prices[j]),
+                    **regime_record,
                 })
             for j in np.flatnonzero(held_start & ~np.isfinite(self.raw[t])):
                 log_rows.append({
@@ -441,13 +465,16 @@ class IntradaySimulator:
         audit['completion_rate'] = audit['fully_completed_order_rows'] / max(1, audit['executed_order_rows'])
         audit['addition_completion_rate'] = audit['completed_addition_order_rows'] / max(1, audit['addition_order_rows'])
         audit['intraday_sessions_used'] = len(self._case_bar_keys)
+        audit['regime_fallback_signal_days'] = int(self.regime_diagnostics.gross_data_fallback.sum())
+        diagnostic_columns = list(self.regime_diagnostics.columns)
         return {
             'curve': curve,
             'audit': audit,
             'fills': pd.DataFrame(fill_rows, columns=FILL_COLUMNS),
             'completion': pd.DataFrame(completion_rows, columns=COMPLETION_COLUMNS),
-            'targets': pd.DataFrame(target_rows, columns=TARGET_COLUMNS),
-            'holdings': pd.DataFrame(holding_rows, columns=['date', 'code', 'side', 'quantity', 'close', 'w', 'gross_target', 'value']),
+            'targets': pd.DataFrame(target_rows, columns=list(dict.fromkeys(TARGET_COLUMNS + diagnostic_columns))),
+            'holdings': pd.DataFrame(holding_rows, columns=list(dict.fromkeys(
+                ['date', 'code', 'side', 'quantity', 'close', 'w', 'gross_target', 'value'] + diagnostic_columns))),
             'logs': pd.DataFrame(log_rows, columns=['date', 'code', 'event', 'detail']),
         }
 
@@ -757,3 +784,4 @@ def run_intraday_backtest(settings, panel, factors, scored, *, minute_store=None
     result['scored'] = sliced
     result['stats'] = _summary(result['curve'], settings)
     return result
+

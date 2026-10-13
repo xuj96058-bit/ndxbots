@@ -132,6 +132,68 @@ class Settings:
     strategy_quality_weight: float = 0.4
     intraday_root: Path | None = None
     hurst_gate_mode: str = "strict_entry"
+    regime_min_coverage: float = 0.8
+    regime_leverage_max_age_days: int = 90
+    regime_missing_policy: str = "floor"
+
+    def __post_init__(self) -> None:
+        """Reject risk settings that could silently disable the exposure rules."""
+        for name in ("regime_window", "regime_min_periods", "regime_ma_window",
+                     "regime_nhnl_window", "regime_rsi_window", "regime_ew_window",
+                     "regime_top_amount", "regime_min_names", "gross_smooth",
+                     "regime_leverage_max_age_days"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if self.regime_min_periods > self.regime_window:
+            raise ValueError("regime_min_periods cannot exceed regime_window")
+        if (isinstance(self.regime_leverage_lag_days, bool)
+                or not isinstance(self.regime_leverage_lag_days, int)
+                or self.regime_leverage_lag_days < 0):
+            raise ValueError("regime_leverage_lag_days must be a nonnegative integer")
+        for name in ("regime_breadth_weight", "regime_leverage_weight", "regime_hot",
+                     "regime_cold", "regime_split", "regime_min_coverage",
+                     "gross_ladder_start", "gross_ladder_step", "gross_step",
+                     "gross_floor", "dual_hot"):
+            value = getattr(self, name)
+            try:
+                valid = not isinstance(value, bool) and math.isfinite(value) and 0 <= value <= 1
+            except (TypeError, ValueError):
+                valid = False
+            if not valid:
+                raise ValueError(f"{name} must be finite and within 0..1")
+        if not math.isclose(self.regime_breadth_weight + self.regime_leverage_weight,
+                            1.0, rel_tol=0, abs_tol=1e-9):
+            raise ValueError("regime breadth_weight and leverage_weight must sum to 1")
+        if not self.regime_cold < self.regime_split < self.regime_hot:
+            raise ValueError("regime thresholds must satisfy cold < split < hot")
+        if self.regime_min_coverage <= 0:
+            raise ValueError("regime_min_coverage must be greater than 0")
+        if self.gross_ladder_step <= 0 or self.gross_step <= 0:
+            raise ValueError("gross_ladder_step and gross_step must be greater than 0")
+        if self.regime_missing_policy not in {"floor", "error"}:
+            raise ValueError("regime_missing_policy must be floor or error")
+
+
+def _regime_int(regime: dict, key: str, default: int) -> int:
+    value = regime.get(key, default)
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"regime.{key} must be an integer") from None
+    if isinstance(value, bool) or not math.isfinite(number) or not number.is_integer():
+        raise ValueError(f"regime.{key} must be an integer")
+    return int(number)
+
+
+def _regime_float(regime: dict, key: str, default: float) -> float:
+    value = regime.get(key, default)
+    if isinstance(value, bool):
+        raise ValueError(f"regime.{key} must be a number")
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"regime.{key} must be a number") from None
 
 
 def load_settings() -> Settings:
@@ -232,27 +294,30 @@ def load_settings() -> Settings:
         qqq_rally_short_top_n=int(strategy.get("qqq_rally_short_top_n", 3)),
         qqq_rally_short_ma200_buffer=float(strategy.get("qqq_rally_short_ma200_buffer", 0.04)),
         qqq_dump_ma200_buffer=float(strategy.get("qqq_dump_ma200_buffer", 0.04)),
-        regime_window=int(regime.get("window", 252)),
-        regime_min_periods=int(regime.get("min_periods", 252)),
-        regime_ma_window=int(regime.get("ma_window", 50)),
-        regime_nhnl_window=int(regime.get("nhnl_window", 20)),
-        regime_rsi_window=int(regime.get("rsi_window", 14)),
-        regime_ew_window=int(regime.get("ew_window", 60)),
-        regime_top_amount=int(regime.get("top_amount", 10)),
-        regime_min_names=int(regime.get("min_names", 40)),
-        regime_breadth_weight=float(regime.get("breadth_weight", 0.7)),
-        regime_leverage_weight=float(regime.get("leverage_weight", 0.3)),
-        regime_hot=float(regime.get("hot", 0.8)),
-        regime_cold=float(regime.get("cold", 0.2)),
-        regime_split=float(regime.get("split", 0.5)),
-        regime_leverage_lag_days=int(regime.get("leverage_lag_days", 21)),
+        regime_window=_regime_int(regime, "window", 252),
+        regime_min_periods=_regime_int(regime, "min_periods", 252),
+        regime_ma_window=_regime_int(regime, "ma_window", 50),
+        regime_nhnl_window=_regime_int(regime, "nhnl_window", 20),
+        regime_rsi_window=_regime_int(regime, "rsi_window", 14),
+        regime_ew_window=_regime_int(regime, "ew_window", 60),
+        regime_top_amount=_regime_int(regime, "top_amount", 10),
+        regime_min_names=_regime_int(regime, "min_names", 40),
+        regime_breadth_weight=_regime_float(regime, "breadth_weight", 0.7),
+        regime_leverage_weight=_regime_float(regime, "leverage_weight", 0.3),
+        regime_hot=_regime_float(regime, "hot", 0.8),
+        regime_cold=_regime_float(regime, "cold", 0.2),
+        regime_split=_regime_float(regime, "split", 0.5),
+        regime_leverage_lag_days=_regime_int(regime, "leverage_lag_days", 21),
+        regime_min_coverage=_regime_float(regime, "min_coverage", 0.8),
+        regime_leverage_max_age_days=_regime_int(regime, "leverage_max_age_days", 90),
+        regime_missing_policy=str(regime.get("missing_policy", "floor")),
         use_gross_ladder=bool(regime.get("use_gross_ladder", False)),
-        gross_smooth=int(regime.get("gross_smooth", 5)),
-        gross_ladder_start=float(regime.get("gross_ladder_start", 0.35)),
-        gross_ladder_step=float(regime.get("gross_ladder_step", 0.05)),
-        gross_step=float(regime.get("gross_step", 0.10)),
-        gross_floor=float(regime.get("gross_floor", 0.60)),
-        dual_hot=float(regime.get("dual_hot", 0.80)),
+        gross_smooth=_regime_int(regime, "gross_smooth", 5),
+        gross_ladder_start=_regime_float(regime, "gross_ladder_start", 0.35),
+        gross_ladder_step=_regime_float(regime, "gross_ladder_step", 0.05),
+        gross_step=_regime_float(regime, "gross_step", 0.10),
+        gross_floor=_regime_float(regime, "gross_floor", 0.60),
+        dual_hot=_regime_float(regime, "dual_hot", 0.80),
         bt_start=str(backtest.get("start", "2021-01-01")),
         bt_end=bt_end,
         cost_bps=float(backtest.get("cost_bps", 10)),
@@ -261,3 +326,4 @@ def load_settings() -> Settings:
         rebalance_weekdays=rebalance_weekdays,
         replacement_score_gap=replacement_score_gap,
     )
+

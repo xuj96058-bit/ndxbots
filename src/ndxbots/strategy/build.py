@@ -9,7 +9,7 @@ from ndxbots.config import load_settings
 from ndxbots.backtest.engine import run_backtest
 from ndxbots.data.ingest import panel_path
 from ndxbots.factors.compute import factor_path
-from ndxbots.regime.compute import regime_path
+from ndxbots.regime.exposure import exposure_by_date, load_regime_table
 from ndxbots.strategy.scores import build_score_table, latest_pool
 
 
@@ -31,26 +31,43 @@ def _print_side(watch: pd.DataFrame, side: str, max_hold: int) -> None:
     print(f"本侧观察候选 {len(part)} 档；完整模拟持仓与退出目标见 exec_pool.csv（max_hold={max_hold}）。")
 
 
-def _print_regime(settings) -> None:
-    path = regime_path(settings)
-    if not path.exists():
-        print("還沒有情緒/擁擠度。可先跑 python -m ndxbots.regime")
+def _print_regime(settings, signal_date=None, diagnostics=None) -> None:
+    """Show the same signal-day inputs and trigger used by the account."""
+    if diagnostics is None:
+        table = load_regime_table(settings)
+        if signal_date is None:
+            if table is None:
+                print("還沒有情緒/擁擠度。可先跑 python -m ndxbots.regime")
+                return
+            signal_date = table["date"].max()
+        calendar = (pd.DatetimeIndex([signal_date]) if table is None else
+                    pd.DatetimeIndex(table["date"]).union(pd.DatetimeIndex([signal_date])))
+        diagnostics = exposure_by_date(table, settings, dates=calendar,
+                                       required_dates=pd.DatetimeIndex([signal_date]))
+    table = diagnostics.copy()
+    table["date"] = pd.to_datetime(table["date"]).dt.normalize()
+    signal_date = table["date"].max() if signal_date is None else pd.Timestamp(signal_date).normalize()
+    selected = table.loc[table["date"].eq(signal_date)]
+    if selected.empty:
+        print(f"市場狀態 {signal_date.date()}: 缺少當日診斷，請重建市場狀態與策略。")
         return
-    table = pd.read_parquet(path)
-    if table.empty:
-        return
-    row = table.iloc[-1]
-    sentiment = row.get("sentiment")
-    crowding = row.get("crowding")
-    sent_txt = f"{sentiment:.3f}" if pd.notna(sentiment) else "nan"
-    crowd_txt = f"{crowding:.3f}" if pd.notna(crowding) else "nan"
+    row = selected.iloc[-1]
+    def number(name):
+        value = row.get(name)
+        return f"{value:.3f}" if pd.notna(value) else "nan"
     print(
-        f"市場狀態 {pd.Timestamp(row['date']).date()}: {row.get('state')}  "
-        f"情緒={sent_txt}  擁擠={crowd_txt}  "
-        f"成分={row.get('membership_source')}"
+        f"市場狀態 {signal_date.date()}: 顯示情緒={number('sentiment')}  "
+        f"交易情緒={number('sentiment_trade')}  平滑交易情緒={number('sentiment_trade_smooth')}  "
+        f"平滑擁擠={number('crowding_smooth')}"
     )
-    if bool(row.get("qqq_sentiment_divergence")):
-        print("背離: QQQ 在 252 日高位，情緒沒有同步過熱。")
+    print(f"毛曝險目標={number('gross_target')}  觸發={row.get('gross_reason', 'unavailable')}  "
+          f"資料品質={row.get('regime_data_reason', 'unverified')}")
+    coverage = row.get("membership_coverage")
+    if pd.notna(coverage):
+        print(f"成分覆蓋={coverage:.1%}  "
+              f"融資參考月={row.get('leverage_reference_month', 'missing')}  "
+              f"可用日={row.get('leverage_available_on', 'missing')}  "
+              f"融資過期={row.get('leverage_stale', 'unknown')}")
 
 
 def run_build() -> None:
@@ -107,7 +124,7 @@ def run_build() -> None:
     )
     if settings.qqq_regime_gate and "qqq_regime" in pool.columns and not pool.empty:
         print(f"今日 QQQ 状态: {pool['qqq_regime'].iloc[0]}")
-    _print_regime(settings)
+    _print_regime(settings, signal_date, simulation["curve"])
     if watch.empty:
         print("今日观察池为空。")
         return
@@ -124,3 +141,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
