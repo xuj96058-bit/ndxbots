@@ -112,7 +112,7 @@ def render_overlay(table, output, settings=None):
                           label="QQQ前復權價格（首日=100）")
     if "baseline_sentiment_trade_smooth" in table:
         handles += sentiment.plot(dates, table.baseline_sentiment_trade_smooth, color="#a4a4a4", lw=1.1,
-                                  alpha=.9, label="修改前交易情緒（5日）")
+                                  alpha=.9, label=f"修改前交易情緒（{settings.gross_smooth}日）")
     handles += sentiment.plot(dates, table.sentiment, color="#8bbbd9", lw=.9, alpha=.55,
                               label="新版展示情緒（含成交量）")
     handles += sentiment.plot(dates, table.sentiment_trade_smooth, color="#07847d", lw=1.9,
@@ -160,9 +160,9 @@ def render_report(table, output, metadata=None, settings=None):
     axes[0].set_ylabel("QQQ前復權價格\n首日=100")
     axes[0].set_title(f"情緒與QQQ對照  |  {period}", loc="left", fontsize=18, pad=16, fontweight="bold")
     if "baseline_sentiment_trade_smooth" in table:
-        axes[1].plot(dates, table.baseline_sentiment_trade_smooth, color="#a5a5a5", lw=1.2, label="修改前交易情緒（5日）")
+        axes[1].plot(dates, table.baseline_sentiment_trade_smooth, color="#a5a5a5", lw=1.2, label=f"修改前交易情緒（{settings.gross_smooth}日）")
     axes[1].plot(dates, table.sentiment, color="#91bad5", lw=.8, alpha=.7, label="新版展示情緒（含成交量）")
-    axes[1].plot(dates, table.sentiment_trade_smooth, color="#087c76", lw=1.8, label="新版交易情緒（5日）")
+    axes[1].plot(dates, table.sentiment_trade_smooth, color="#087c76", lw=1.8, label=f"新版交易情緒（{settings.gross_smooth}日）")
     axes[1].axhline(hot, color="#b94737", ls="--", lw=.8, label=f"過熱參考{hot:g}")
     axes[1].axhline(ladder_start, color="#b88b3a", ls="--", lw=.8, label=f"降倉起點{ladder_start:g}")
     axes[1].set_ylim(0, 1)
@@ -195,7 +195,7 @@ def render_report(table, output, metadata=None, settings=None):
             ax.plot(x, np.polyval(fit, x), color="#b94737", lw=1.6)
         ax.axhline(0, color="#888", lw=.7)
         ax.set_xlim(0, 1)
-        ax.set_xlabel("T日交易情緒（5日平滑）")
+        ax.set_xlabel(f"T日交易情緒（{settings.gross_smooth}日平滑）")
         ax.set_ylabel(f"{TARGETS[target]}（%）")
         ax.set_title(f"{TARGETS[target]}  |  Pearson={row.pearson:.3f}  Spearman={row.spearman:.3f}  n={row.n}", fontsize=11)
     fig.suptitle(f"情緒與QQQ報酬散點圖  |  {period}", fontsize=18, fontweight="bold")
@@ -219,6 +219,9 @@ def render_report(table, output, metadata=None, settings=None):
     selected = selected.rename(columns={"score": "情緒版本", "target_label": "QQQ對照", "n": "樣本數", "pearson": "Pearson", "spearman": "Spearman"}).drop(columns="target")
     table_html = selected.to_html(index=False, float_format=lambda x: f"{x:.3f}", border=0)
     images = "".join(f'<img alt="{name}" src="data:image/png;base64,{base64.b64encode((output / name).read_bytes()).decode()}">' for name in ("sentiment_qqq_overlay.png", "sentiment_qqq_timeline.png", "sentiment_qqq_scatter.png"))
+    baseline_note = ("灰線是原版算法在同一份新行情上的結果，避免把資料修訂誤認為程式改良效果。"
+                     if "baseline_sentiment_trade_smooth" in table else
+                     "本次沒有提供原版基準分數，圖表呈現新版情緒。")
     notes = ("當日、過去5/21日的相關主要描述同步關係；未來1/5/21日才是領先關係檢查。價格水準相關容易受趨勢影響。"
              "未來報酬缺乏完整觀察窗口的尾端日期自動排除，每项保留實際樣本數。5/21日窗口重疊，不能將每列當成獨立樣本。"
              "本圖沒有優化權重或閾值，也不是獨立樣本外驗證。FINRA若沒有實際發布日期，仍使用明確標記的月末＋21天估計；歷史修訂版本未知。"
@@ -226,7 +229,7 @@ def render_report(table, output, metadata=None, settings=None):
     document = f'''<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>情緒與QQQ相關性</title>
 <style>body{{margin:0;background:#f0f3f7;color:#17283a;font-family:"Microsoft YaHei",sans-serif}}main{{max-width:1200px;margin:35px auto;padding:24px}}h1{{font-size:30px}}p{{line-height:1.8}}.card{{background:white;border-radius:12px;padding:24px;margin:22px 0;overflow:auto}}img{{width:100%;height:auto;border-radius:8px}}table{{width:100%;border-collapse:collapse;font-size:13px}}td,th{{padding:10px;border-bottom:1px solid #e6eaf0;text-align:left}}a{{color:#2451a4}}</style>
 <main><h1>情緒指標 × QQQ</h1><p>{period} · {len(table)} 個交易日 · 有效交易情緒 {meta['valid_trade_score_sessions']} 日 · 情緒層資料降級 {meta['exposure_fallback_sessions']} 日</p>
-<div class="card"><p>時間圖分開呈現QQQ、情緒與倉位，散點圖檢查報酬關係。灰線是原版算法在同一份新行情上的結果，避免把資料修訂誤認為程式改良效果。倉位圖只表示情緒層目標，完整策略另有Hurst、選股及帳戶限制。</p>{images}</div>
+<div class="card"><p>疊圖以雙軸對照QQQ與情緒，分面圖呈現倉位，散點圖檢查報酬關係。{baseline_note}倉位圖只表示情緒層目標，完整策略另有Hurst、選股及帳戶限制。</p>{images}</div>
 <div class="card"><h2>修改前後相關係數</h2>{table_html}<p><a href="sentiment_qqq_daily.csv">下載每日對齊資料</a> · <a href="correlations.csv">全部相關係數</a> · <a href="source_metadata.json">資料來源與品質</a></p></div>
 <div class="card"><h2>讀圖方式</h2><p>{html.escape(notes)}</p></div></main></html>'''
     (output / "sentiment_qqq_report.html").write_text(document, encoding="utf-8")
