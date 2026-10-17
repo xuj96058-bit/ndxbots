@@ -4,7 +4,7 @@
 
 納斯達克 100 本機研究平台：從富途 OpenD 讀取行情、計算日線因子與觀察池，並用已確認的第一組日內成交規則回測。此版本已取代舊成交邏輯。
 
-行情、帳戶模擬及研究結果存放在本機 `data/`；**不要上傳行情、回測結果、`.env` 或虛擬環境到 GitHub**。`docs/research/` 僅保存經用戶確認公開的派生示例圖。程式使用行情介面，沒有向券商下單的功能。
+行情、帳戶模擬及研究結果存放在本機 `data/`；**不要上傳行情、回測結果、`.env` 或虛擬環境到 GitHub**。`docs/research/` 僅保存經用戶確認公開的派生示例圖。研究流程使用行情介面；獨立的 `order.py` 提供富途模擬盤及實盤手動下單，預設只預覽。
 
 ## 已確認的策略與成交規則
 
@@ -138,6 +138,40 @@ python -B -m unittest discover -s tests -v
 
 Mac/Linux 使用 `source .venv/bin/activate`。
 
+## 模擬盤與實盤下單
+
+安裝後，在倉庫根目錄執行 `python order.py`，或在任何目錄使用 `python -m ndxbots.order`。支援 `accounts`（帳戶清單）、`place`（下單）、`orders`（訂單查詢）及 `cancel`（撤單）。預設 `--env SIMULATE`；`place` 和 `cancel` 未加 `--submit` 時只作離線預覽，不連線、不解鎖、不送出。
+
+連線沿用 `config.yaml` 的 `futu.host`／`futu.port`，可用 `FUTU_HOST`／`FUTU_PORT` 覆蓋。券商預設為 `--security-firm FUTUSECURITIES`；其他券商需指定已安裝 SDK 支援的 `SecurityFirm` 名稱。帳戶和訂單查詢需要本機已登入的 OpenD；實際送單還需要相應帳戶及美股交易權限。先從 `accounts` 取得正確環境的 `acc_id`，再明確指定帳戶，不會自動使用清單的第一個帳戶。[Futu 帳戶清單文件](https://openapi.futunn.com/futu-api-doc/trade/get-acc-list.html)
+
+以下 `123` 是示例帳戶編號，請替換成自己的模擬帳戶；價格只用於示範命令格式：
+
+```powershell
+python order.py accounts
+python order.py place --acc-id 123 --code US.AAPL --side BUY --qty 1 --price 100
+python order.py place --acc-id 123 --code US.AAPL --side BUY --qty 1 --price 100 --submit
+python order.py orders --acc-id 123
+python order.py cancel --acc-id 123 --order-id YOUR_ORDER_ID
+python order.py cancel --acc-id 123 --order-id YOUR_ORDER_ID --submit
+```
+
+`--qty` 為正整數的實際股數；只支援美股整股、正常交易時段（RTH）及當日有效（DAY）訂單，不接受期權代碼。`--order-type LIMIT` 是預設，必須提供正數 `--price`：低於 1 美元最多四位小數，1 美元或以上最多兩位，不會自動取整。市價單使用 `--order-type MARKET` 並省略 `--price`。可加 `--remark`，上限為 64 個 UTF-8 位元組。`BUY`／`SELL` 是券商買賣方向：`BUY` 可能回補空倉，`SELL` 可能平多或依帳戶權限建立空倉，不等同策略的多空訊號；本入口不提供 `BUY_BACK`／`SELL_SHORT`。[Futu 下單文件](https://openapi.futunn.com/futu-api-doc/en/trade/place-order.html)
+
+實盤先列出帳戶，核對後用該帳戶預覽；送出時必須同時指定 `--env REAL --submit --confirm-real`。以下 `456` 需替換為實盤帳戶：
+
+```powershell
+python order.py accounts --env REAL
+python order.py place --env REAL --acc-id 456 --code US.AAPL --side BUY --qty 1 --price 100
+python order.py place --env REAL --acc-id 456 --code US.AAPL --side BUY --qty 1 --price 100 --submit --confirm-real
+python order.py orders --env REAL --acc-id 456
+```
+
+實盤需要先解鎖交易。GUI 版 OpenD 請在介面手動解鎖；程式沒有提供密碼時沿用 OpenD 的解鎖狀態。命令列版 OpenD 可透過 `FUTU_TRADE_PASSWORD` 環境變數（或本機 `.env`）解鎖，或在實盤 `place`／`cancel` 加 `--unlock`，於未設定該變數時安全輸入密碼。密碼不接受命令列參數；使用 GUI 版時不要設定此變數或加 `--unlock`。實盤撤單同樣需要 `--env REAL --submit --confirm-real`。
+
+送單或撤單後應以 `orders` 查核狀態，可用 `--order-id` 查指定訂單；查詢涵蓋未完成訂單及最近 24 小時完成／取消的訂單，更早記錄請在券商介面查閱。收到訂單編號不表示已成交，撤單申請也不保證成功。若連線逾時或結果不明，程式不會自動重送；先查詢訂單及券商介面，再決定是否重試，以免重複下單。
+
+這個入口不讀取 `exec_pool.csv`，也不自動執行策略或 T+1 日內排程。研究帳戶的前復權參考數量不能直接當券商股數；策略接入實際帳戶仍須按真實持倉、現金、未成交訂單與成交結果重新對帳。自動測試使用假的 SDK／交易 context，不會連線 OpenD 或送出模擬盤、實盤訂單。
+
 ## 研究快照與限制
 
 目前預設策略對應用戶選定的「重建舊硬閘＋QQQ 縮放」。本機缺資料研究從 **2018-01-02 至 2026-09-18**，以 2016 年起日線暖身、本金 20,000、單邊成本 10 bp，期末為 **1,147,806.29**，累計 **5,639.03%**、252 日年化 **59.3628%**、Sharpe **1.3884**、最大回撤 **37.6848%**。該研究有 1,026 筆原分鐘成交及 635 筆缺資料後的 T+1 收盤替代成交；645 筆無資金加倉未成交，10 筆加倉等到收盤賣出釋放資金才成交。原完成度旗標保留，不能稱作全部訂單都符合原盤中期限。
@@ -152,7 +186,7 @@ Mac/Linux 使用 `source .venv/bin/activate`。
 
 五分鐘 OHLC 觸及限價不保證真實成交，也沒有逐筆先後、委託排隊、買賣價差、成交量容量或開盤競價撮合模型。研究允許零碎前復權單位；期限單是保證當日完成的模擬成交假設。尚未建模借券可得性、借券費、融資與現金利息、完整保證金、稅或個人券商限制。現金限制不等於完整空頭保證金限制，價格波動可能令實際毛曝險超過目標。
 
-歷史選股資料不是已修復的逐時點歷史納指成分全集，存在存活者與成分選擇偏差。分鐘及日線來源的 OHLC／復權差異也需要保留審計。程式未加入新的止損或組合回撤限制；歷史年化及回撤不是未來收益承諾。使用於實際帳戶前，必須另行處理整股、借券、券商訂單與持倉／現金對帳。
+歷史選股資料不是已修復的逐時點歷史納指成分全集，存在存活者與成分選擇偏差。分鐘及日線來源的 OHLC／復權差異也需要保留審計。程式未加入新的止損或組合回撤限制；歷史年化及回撤不是未來收益承諾。`order.py` 只提供明確指定股數的手動訂單；策略用於實際帳戶前，仍須另行處理目標股數換算、借券及券商訂單與持倉／現金對帳。
 
 不要提交：`data/`、`.env`、`.venv/`、`__pycache__/` 或本機行情、回測及研究結果；經用戶確認公開且放在 `docs/research/` 的派生示例圖除外。
 
