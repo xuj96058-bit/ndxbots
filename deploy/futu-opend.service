@@ -1,0 +1,29 @@
+[Unit]
+Description=Futu OpenD local gateway for ndxbots
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+ConditionFileIsExecutable=/opt/futu-opend/FutuOpenD
+ConditionPathExists=/opt/futu-opend/FutuOpenD.xml
+ConditionPathExists=/opt/futu-opend/Appdata.dat
+
+[Service]
+Type=simple
+User=ndxbots
+Group=ndxbots
+WorkingDirectory=/opt/futu-opend
+Environment=HOME=/var/lib/ndxbots
+EnvironmentFile=/etc/ndxbots/paper.env
+# OpenD >=10.10: first log in interactively under this same user and home.
+# Run in the foreground; systemd, rather than OpenD's monitor, owns restarts.
+ExecStart=/opt/futu-opend/FutuOpenD -cfg_file=/opt/futu-opend/FutuOpenD.xml -login_account=${NDXBOTS_OPEND_LOGIN_ACCOUNT} -login_by_remember=1 -api_ip=127.0.0.1 -api_port=11111 -console=1 -no_monitor=1
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=45
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
