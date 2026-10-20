@@ -1,0 +1,29 @@
+[Unit]
+Description=ndxbots US SIMULATE automatic execution
+Wants=network-online.target futu-opend.service
+After=network-online.target futu-opend.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+ConditionFileIsExecutable=/opt/ndxbots/.venv/bin/python
+ConditionPathExists=/etc/ndxbots/paper.env
+
+[Service]
+Type=simple
+User=ndxbots
+Group=ndxbots
+WorkingDirectory=/opt/ndxbots
+Environment=HOME=/var/lib/ndxbots
+EnvironmentFile=/etc/ndxbots/paper.env
+# This unit submits SIMULATE orders. Run the documented previews before enabling.
+# The automatic CLI has no REAL environment option.
+ExecStart=/opt/ndxbots/.venv/bin/python -m ndxbots.paper run --acc-id ${NDXBOTS_PAPER_ACCOUNT_ID} --submit --refresh --poll-seconds 10
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=60
+UMask=0077
+NoNewPrivileges=true
+# Keep the same /tmp namespace as manual commands: the per-user/account worker
+# lock must be shared even when another checkout or DATA_DIR is selected.
+
+[Install]
+WantedBy=multi-user.target
